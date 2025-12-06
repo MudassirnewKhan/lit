@@ -3,7 +3,8 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from "@/lib/session";
 import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
+// FIXED: Removed unused 'z' import
+// import { z } from 'zod';
 
 // Define the shape of the User we expect from session
 interface SessionUser {
@@ -132,7 +133,8 @@ export async function deleteMeeting(id: string) {
     
     revalidatePath('/mentorship');
     return { success: true, message: 'Meeting cancelled.' };
-  } catch (error) {
+  } catch {
+    // FIXED: Removed unused 'error' variable
     return { error: 'Failed to delete meeting.' };
   }
 }
