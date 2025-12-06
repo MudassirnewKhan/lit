@@ -1,14 +1,12 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lightbulb, Users, Flame, Rocket } from 'lucide-react';
-import Navbar from '@/components/header';
-import Footer from '@/components/footer';
 
 export default function HomePage() {
   return (
     <div className="bg-background text-foreground">
       {/* Navbar would be here */}
-      <Navbar/>
+      
       {/* Hero Section */}
       <main className="flex flex-col items-center justify-center text-center min-h-screen px-4">
         <h1 className="text-8xl md:text-9xl font-extrabold text-primary tracking-tighter">
@@ -100,8 +98,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer would be here */}
-      <Footer/>
+
     </div>
   );
 }

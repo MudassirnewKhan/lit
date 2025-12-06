@@ -1,6 +1,5 @@
 import React from 'react';
-import Navbar from '../../../components/header';
-import Footer from '../../../components/footer';
+
 import { Button } from '@/components/ui/button';
 import {
   Accordion,
@@ -66,7 +65,7 @@ const faqCategories = [
 export default function FaqsPage() {
   return (
     <div className="bg-background text-foreground">
-      <Navbar />
+    
 
       <main className="container mx-auto py-12 px-4">
         <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-12">
@@ -119,7 +118,7 @@ export default function FaqsPage() {
         </div>
       </main>
 
-      <Footer />
+    
     </div>
   );
 }

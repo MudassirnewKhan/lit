@@ -1,0 +1,129 @@
+// This is the complete and corrected blueprint for your database.
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// --- ENUMS ---
+
+enum UserRole {
+  admin
+  subadmin
+  mentor
+  sponsor
+  awardee
+}
+
+enum ApplicationStatus {
+  pending
+  approved
+  rejected
+}
+
+// --- MODELS ---
+
+model User {
+  id            String    @id @default(uuid())
+  firstName     String?   @map("first_name")
+  lastName      String?   @map("last_name")
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  
+  // --- NEW FIELDS FOR PROFILE SECTION ---
+  bio           String?   @db.Text             // Allows for long descriptions
+  phoneNumber   String?   @map("phone_number") // Stores contact info
+  // --------------------------------------
+
+  lastLogin     DateTime? @map("last_login")
+  mfaSecret     String?   @unique @map("mfa_secret")
+  mfaEnabled    Boolean   @default(false) @map("mfa_enabled")
+
+  // Relations
+  roles         UserRoleAssignment[]
+  posts         Post[]
+  comments      Comment[]
+  meetings      Meeting[] // <--- Add this relation
+  resources     Resource[] // <--- Add this relation
+  batchYear     String?   // e.g., "2024", "2025". Only relevant for Students.
+
+}
+
+model Resource {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  fileUrl     String   // URL to the file in Supabase (or external link)
+  fileType    String   // e.g. 'application/pdf', 'text/plain', 'external-link'
+  category    String   // e.g., "Academic", "Policy", "Career"
+  createdAt   DateTime @default(now())
+  
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+// --- NEW MODEL ---
+model Meeting {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  link        String   // Zoom/Google Meet URL
+  scheduledAt DateTime // When is the meeting?
+  createdAt   DateTime @default(now())
+  targetBatch String?
+  
+  mentorId    String
+  mentor      User     @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+}
+model UserRoleAssignment {
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String   @map("user_id")
+  role    UserRole
+
+  @@id([userId, role])
+  @@map("user_roles")
+}
+
+model Application {
+  id            String            @id @default(uuid())
+  fullName      String            @map("full_name")
+  email         String            @unique
+  universityId  String            @map("university_id")
+  essay         String?
+  status        ApplicationStatus @default(pending)
+  submittedAt   DateTime          @default(now()) @map("submitted_at")
+  batchYear     String            // e.g. "2025"
+
+  @@map("applications")
+}
+model Post {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  content     String   @db.Text
+  
+  // CHANGE: Replace 'imageUrl' with this JSON field
+  // It will store an array: [{ url: string, type: string, name: string }]
+  attachments Json?    
+  
+  authorId    String
+  comments      Comment[]
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+// --- NEW MODEL ---
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}

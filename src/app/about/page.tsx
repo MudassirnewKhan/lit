@@ -1,6 +1,4 @@
 import React from 'react';
-import Navbar from '../../components/header';
-import Footer from '../../components/footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -31,7 +29,6 @@ const sponsors = [
 export default function AboutPage() {
   return (
     <div className="bg-background text-foreground">
-      <Navbar />
 
       {/* Page Header */}
       <header className="bg-muted py-20 text-center">
@@ -145,7 +142,6 @@ export default function AboutPage() {
             </aside>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }

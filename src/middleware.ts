@@ -1,51 +1,59 @@
-// File Path: src/middleware.ts
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-// This is the secret path stored on the server.
-const ADMIN_PATH = process.env.ADMIN_LOGIN_PATH;
-
-// The "Allow List" of all known public pages and page groups.
-const publicRoutes = [
-  '/',
-  '/about',
-  '/apply',
-  '/alumni',
-  '/resources',
-  '/policies',
-  '/login',
-  '/donate'
-];
-
-export function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
-
-  // 1. Check if the requested path is the exact secret admin path.
-  if (pathname === `/${ADMIN_PATH}`) {
-    // If it matches, allow the request to proceed to the admin page.
-    return NextResponse.next();
-  }
-
-  // 2. Check if the requested path is one of the known public routes.
-  const isPublic = publicRoutes.some(route => 
-    pathname === route || (pathname.startsWith(route + '/') && route !== '/')
-  );
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
   
-  if (isPublic) {
-    // If it's a public route, allow the request.
+  // Ignore API and Next.js internal files
+  if (pathname.startsWith('/api') || pathname.startsWith('/_next')) {
     return NextResponse.next();
   }
 
-  // 3. If it's not the admin path and not a public route, it's an invalid attempt.
-  // Block the request by FORCEFULLY REDIRECTING to the homepage.
-  const url = request.nextUrl.clone();
-  url.pathname = '/'; // Redirect to the homepage
-  return NextResponse.redirect(url);
+  const secret = process.env.NEXTAUTH_SECRET;
+  const token = await getToken({ req: request, secret: secret });
+  
+  const adminLoginPath = `/${process.env.ADMIN_LOGIN_PATH}`;
+
+  // --- 1. Protect User Routes ---
+  // NOTE: I removed '/resources' from this list so it is now Public.
+  if (
+    pathname.startsWith('/dashboard') || 
+    pathname.startsWith('/feed') || 
+    pathname.startsWith('/mentorship') || 
+    pathname.startsWith('/profile')
+  ) {
+    if (!token) {
+      // If trying to access these private pages without login, send to student login
+      return NextResponse.redirect(new URL('/login/awardee', request.url));
+    }
+  }
+
+  // --- 2. Admin & Sub-admin Logic ---
+  // Check if user has EITHER 'admin' or 'subadmin' role
+  const isAdminUser = token?.roles?.some((role: string) => ['admin', 'subadmin'].includes(role));
+  
+  const isAccessingAdminRoute = pathname.startsWith('/admin');
+
+  if (isAccessingAdminRoute) {
+    // If trying to access /admin but NOT an admin or subadmin -> BLOCK
+    if (!isAdminUser) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+    // If they are admin/subadmin -> ALLOW
+    return NextResponse.next();
+  }
+
+  // Prevent admins from seeing the secret login page if they are already logged in
+  if (pathname === adminLoginPath) {
+    if (isAdminUser) {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    }
+  }
+  
+  return NextResponse.next();
 }
 
-// This config ensures the middleware runs on every request except for static files
-// and internal Next.js assets, which is necessary for this security model.
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };

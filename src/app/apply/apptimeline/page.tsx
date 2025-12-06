@@ -1,6 +1,5 @@
 import React from 'react';
-import Navbar from '../../../components/header';
-import Footer from '../../../components/footer';
+
 import ApplySidebar from '../../../components/residebar';
 import { Button } from '@/components/ui/button';
 import {
@@ -49,7 +48,7 @@ const faqs = [
 export default function AppTimelinePage() {
   return (
     <div className="bg-background text-foreground">
-      <Navbar />
+      
 
       <main className="container mx-auto py-12 px-4">
         <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-12">
@@ -114,7 +113,7 @@ export default function AppTimelinePage() {
         </div>
       </main>
 
-      <Footer />
+      
     </div>
   );
 }

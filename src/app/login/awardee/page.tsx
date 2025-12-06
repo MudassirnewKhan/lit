@@ -2,57 +2,89 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import Navbar from '@/components/header';
-import Footer from '@/components/footer';
+import { signIn } from "next-auth/react";
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
-export default function AwardeeLoginPage() {
+export default function StudentLogin() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('loading');
-    // Simulate API call for login
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    // In a real app, you'd handle success or error here
-    setStatus('idle');
+    setError('');
+
+    try {
+      // 1. Attempt to sign in
+      const result = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+      });
+
+      if (result?.error) {
+        setError('Invalid email or password.');
+        setStatus('idle');
+      } else if (result?.ok) {
+        // 2. THE FIX: Force a hard refresh
+        // Instead of router.push(), we use window.location.href.
+        // This forces the browser to request the entire page from the server again.
+        // The server will see the new session cookie and render the Navbar with "My Dashboard" instead of "Login".
+        window.location.href = '/dashboard';
+      }
+    } catch (err) {
+      setStatus('idle');
+      setError('Something went wrong.');
+    }
   };
 
   return (
-    <div className="bg-background text-foreground">
-        <Navbar />
-        <main className="min-h-screen flex items-center justify-center bg-muted p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <CardTitle className="text-3xl font-bold">Awardee Login</CardTitle>
-              <CardDescription>Welcome back! Please enter your credentials to access your dashboard.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" placeholder="Enter your email" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" placeholder="Enter your password" required />
-                </div>
-                <Button type="submit" className="w-full" disabled={status === 'loading'}>
-                  {status === 'loading' ? 'Signing In...' : 'Sign In'}
-                </Button>
-                <div className="text-center text-sm">
-                  <a href="#" className="text-primary hover:underline">
-                    Forgot your password?
-                  </a>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </main>
-        <Footer />
+    <div className="flex items-center justify-center min-h-[80vh] p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-primary">Scholar Login</CardTitle>
+          <CardDescription>Enter the credentials sent to your email.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                required 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+              />
+            </div>
+            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+            <Button type="submit" className="w-full" disabled={status === 'loading'}>
+              {status === 'loading' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Sign In'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
+
+
 }
 
+  

@@ -1,6 +1,5 @@
 import React from 'react';
-import Navbar from '../../../components/header'
-import Footer from '@/components/footer';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -33,7 +32,7 @@ const faqs = [
 export default function WhoCanApplyPage() {
   return (
     <div className="bg-background text-foreground">
-      <Navbar />
+      
 
       <main className="container mx-auto py-12 px-4">
         <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-12">
@@ -94,7 +93,7 @@ export default function WhoCanApplyPage() {
         </div>
       </main>
 
-      <Footer />
+    
     </div>
   );
 }

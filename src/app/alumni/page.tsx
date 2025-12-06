@@ -1,6 +1,5 @@
 import React from 'react';
-import Navbar from '../../components/header';
-import Footer from '../../components/footer';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -55,7 +54,6 @@ const successfulScholarsByYear = [
 export default function AlumniPage() {
   return (
     <div className="bg-background text-foreground">
-      <Navbar />
 
       <header className="bg-muted py-20 text-center">
         <div className="container mx-auto px-4">
@@ -167,7 +165,6 @@ export default function AlumniPage() {
             </aside>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }
