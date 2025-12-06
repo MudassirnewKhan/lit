@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
-import { UserCircle, Trash2, Loader2, FileText, Download, MessageCircle, Send } from 'lucide-react';
+// FIXED: Removed unused 'Download' import
+import { UserCircle, Trash2, Loader2, FileText, MessageCircle, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { deletePost, createComment, deleteComment, fetchComment } from '@/app/(dashboard)/feed/actions';
@@ -24,7 +25,7 @@ type PostWithAuthor = {
   id: string;
   createdAt: Date;
   content: string;
-  attachments: any;
+  attachments: Attachment[]; // FIXED: Replaced 'any' with Attachment[]
   authorId: string;
   author: { name: string | null; roles: string[] };
   comments: Comment[];
@@ -50,36 +51,30 @@ export default function PostCard({ post, currentUserId, isAdmin, onDelete }: Pos
 
   const canDeletePost = currentUserId === post.authorId || isAdmin;
 
-  // --- REALTIME COMMENTS SUBSCRIPTION ---
   useEffect(() => {
     const channel = supabase
-      .channel(`comments-${post.id}`) // Unique channel per post
+      .channel(`comments-${post.id}`)
       .on(
         'postgres_changes',
         {
           event: '*', 
           schema: 'public',
-          table: 'Comment', // Ensure this matches your DB table name exactly (Case Sensitive!)
-          filter: `postId=eq.${post.id}`, // Only listen for this specific post
+          table: 'Comment',
+          filter: `postId=eq.${post.id}`,
         },
         async (payload) => {
-          // 1. Handle New Comment
           if (payload.eventType === 'INSERT') {
-            // Fetch author details since Supabase only sends raw data
             const newComment = await fetchComment(payload.new.id);
             if (newComment) {
                setComments((prev) => {
-                 // Avoid duplicates if I just created it
                  if (prev.some(c => c.id === newComment.id)) return prev;
                  return [...prev, newComment];
                });
-               // Optional: Show toast if it's not my own comment
                if (newComment.authorId !== currentUserId) {
                  toast.success('New comment');
                }
             }
           } 
-          // 2. Handle Delete
           if (payload.eventType === 'DELETE') {
              setComments((prev) => prev.filter(c => c.id !== payload.old.id));
           }
@@ -90,7 +85,6 @@ export default function PostCard({ post, currentUserId, isAdmin, onDelete }: Pos
     return () => { supabase.removeChannel(channel); };
   }, [post.id, currentUserId]);
 
-  // --- DELETE POST LOGIC ---
   const performDelete = async () => {
     setIsDeleting(true);
     const result = await deletePost(post.id);
@@ -115,7 +109,6 @@ export default function PostCard({ post, currentUserId, isAdmin, onDelete }: Pos
     ), { duration: 5000 });
   };
 
-  // --- COMMENT LOGIC ---
   const handleCommentSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsCommenting(true);
@@ -124,7 +117,6 @@ export default function PostCard({ post, currentUserId, isAdmin, onDelete }: Pos
     const result = await createComment(post.id, formData);
     if (result.success && result.comment) {
       commentFormRef.current?.reset();
-      // We add it locally immediately for speed (Realtime will skip duplicate)
       setComments(prev => [...prev, result.comment!]);
       if (!showComments) setShowComments(true);
       toast.success('Comment added'); 
@@ -137,7 +129,6 @@ export default function PostCard({ post, currentUserId, isAdmin, onDelete }: Pos
   const performCommentDelete = async (commentId: string) => {
     const result = await deleteComment(commentId);
     if (result.success) {
-      // Remove locally immediately
       setComments(prev => prev.filter(c => c.id !== commentId));
       toast.success('Comment deleted');
     } else {
@@ -174,7 +165,7 @@ export default function PostCard({ post, currentUserId, isAdmin, onDelete }: Pos
     ), { duration: 5000 });
   };
 
-  const attachments = (post.attachments as Attachment[]) || [];
+  const attachments = post.attachments || [];
 
   return (
     <Card className="hover:bg-slate-50 transition-colors relative group mb-4">
@@ -219,7 +210,6 @@ export default function PostCard({ post, currentUserId, isAdmin, onDelete }: Pos
         )}
       </CardContent>
 
-      {/* Comments Section */}
       <CardFooter className="flex flex-col items-stretch border-t pt-3 bg-gray-50/50">
         <div className="flex items-center justify-between w-full mb-3">
           <Button variant="ghost" size="sm" className="text-muted-foreground gap-2" onClick={() => setShowComments(!showComments)}>

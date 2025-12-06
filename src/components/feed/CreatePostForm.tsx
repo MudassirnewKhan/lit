@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Send, Paperclip, X, Image as ImageIcon, File as FileIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { supabase } from '@/lib/supabase'; // The file we created in Step 3
+import { supabase } from '@/lib/supabase';
 
 type Attachment = {
   url: string;
@@ -22,7 +22,6 @@ export default function CreatePostForm() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      // Append new files to existing ones
       setSelectedFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
     }
   };
@@ -35,10 +34,8 @@ export default function CreatePostForm() {
     const uploadedAttachments: Attachment[] = [];
 
     for (const file of selectedFiles) {
-      // 1. Create unique name: timestamp-filename
       const fileName = `${Date.now()}-${file.name.replaceAll(' ', '_')}`;
       
-      // 2. Upload to Supabase Bucket 'feed-uploads'
       const { data, error } = await supabase.storage
         .from('feed-uploads')
         .upload(fileName, file);
@@ -48,7 +45,6 @@ export default function CreatePostForm() {
         throw new Error(`Failed to upload ${file.name}`);
       }
 
-      // 3. Get Public URL
       const { data: { publicUrl } } = supabase.storage
         .from('feed-uploads')
         .getPublicUrl(data.path);
@@ -69,23 +65,22 @@ export default function CreatePostForm() {
     const formData = new FormData(event.currentTarget);
 
     try {
-      // 1. Upload files first
       let attachments: Attachment[] = [];
       if (selectedFiles.length > 0) {
         attachments = await uploadFiles();
       }
 
-      // 2. Create Post with attachment URLs
       const result = await createPost(formData, attachments);
 
       if (result?.error) {
         toast.error(result.error);
       } else {
         formRef.current?.reset();
-        setSelectedFiles([]); // Clear files
+        setSelectedFiles([]);
         toast.success("Post shared successfully!");
       }
-    } catch (err) {
+    } catch {
+      // FIXED: Removed unused 'err' variable
       toast.error("Failed to upload files.");
     } finally {
       setIsPending(false);
@@ -101,7 +96,6 @@ export default function CreatePostForm() {
         disabled={isPending}
       />
 
-      {/* File Previews */}
       {selectedFiles.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-2">
           {selectedFiles.map((file, index) => (
@@ -121,7 +115,6 @@ export default function CreatePostForm() {
       )}
 
       <div className="flex justify-between items-center border-t pt-3">
-        {/* Hidden File Input */}
         <input
           type="file"
           multiple
