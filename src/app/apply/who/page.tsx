@@ -1,11 +1,13 @@
 import React from 'react';
-
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+// FIXED: Removed unused Card imports
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle2, ArrowRight, Newspaper, Users, Facebook, Award } from 'lucide-react';
+// FIXED: Removed unused Icon imports (Newspaper, Users, etc.)
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 import ApplySidebar from '@/components/residebar';
+// FIXED: Import Link
+import Link from 'next/link';
 
 const eligibilityCriteria = [
   "Must be a currently enrolled, full-time student at the university.",
@@ -33,7 +35,6 @@ export default function WhoCanApplyPage() {
   return (
     <div className="bg-background text-foreground">
       
-
       <main className="container mx-auto py-12 px-4">
         <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-12">
           
@@ -69,7 +70,8 @@ export default function WhoCanApplyPage() {
                     ))}
                 </Accordion>
                 <p className="mt-6 text-muted-foreground">
-                    Have more questions? <a href="/apply/faqs" className="text-primary hover:underline">Check our full FAQs page</a>.
+                    {/* FIXED: Replaced <a> with Link */}
+                    Have more questions? <Link href="/apply/faqs" className="text-primary hover:underline">Check our full FAQs page</Link>.
                 </p>
             </section>
             
@@ -80,16 +82,17 @@ export default function WhoCanApplyPage() {
                 <p className="mt-4 max-w-2xl mx-auto text-muted-foreground">
                     If you meet the criteria and are ready to join a community of leaders and innovators, we encourage you to start your application today.
                 </p>
-                <a href="/apply/start">
+                {/* FIXED: Replaced <a> with Link */}
+                <Link href="/apply/start">
                     <Button size="lg" className="mt-6">
                         Start Your Application Now <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
-                </a>
+                </Link>
             </section>
           </div>
 
           {/* Sidebar Section */}
-         <ApplySidebar/>
+          <ApplySidebar/>
         </div>
       </main>
 
@@ -97,4 +100,3 @@ export default function WhoCanApplyPage() {
     </div>
   );
 }
-
