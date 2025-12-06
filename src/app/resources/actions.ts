@@ -84,7 +84,6 @@ export async function deleteResource(resourceId: string) {
         });
         
         // FIX: Properly check if author is staff (Admin or Subadmin)
-        // We use the type definition { role: string } to satisfy TypeScript
         const isAuthorStaff = author?.roles.some((r: { role: string }) => ['admin', 'subadmin'].includes(r.role));
 
         if (isAuthorStaff) {
@@ -98,7 +97,8 @@ export async function deleteResource(resourceId: string) {
     }
 
     return { error: 'Unauthorized' };
-  } catch (error) {
+  } catch {
+    // FIXED: Removed unused 'error' variable to silence ESLint warning
     return { error: 'Failed to delete resource.' };
   }
 }

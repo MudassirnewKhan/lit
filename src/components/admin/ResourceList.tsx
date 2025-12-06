@@ -6,7 +6,16 @@ import { Trash2, FileText, ExternalLink } from 'lucide-react';
 import { deleteResource } from '@/app/resources/actions'
 import toast from 'react-hot-toast';
 
-export default function ResourceList({ initialResources }: { initialResources: any[] }) {
+// FIXED: Defined interface for the resource item
+interface ResourceItem {
+  id: string;
+  title: string;
+  category: string;
+  url: string;
+}
+
+// FIXED: Replaced 'any[]' with 'ResourceItem[]'
+export default function ResourceList({ initialResources }: { initialResources: ResourceItem[] }) {
   const handleDelete = async (id: string) => {
     if(confirm('Delete this resource?')) {
       const result = await deleteResource(id);

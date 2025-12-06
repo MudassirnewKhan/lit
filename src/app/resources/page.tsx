@@ -5,8 +5,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Link2, FileText } from 'lucide-react';
-import ApplySidebar from '@/components/residebar'; // Ensure this path is correct
+// FIXED: Removed unused 'FileText' import
+import { Link2 } from 'lucide-react';
+import ApplySidebar from '@/components/residebar'; 
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -15,8 +16,23 @@ import DeleteResourceButton from '@/components/resources/DeleteResourceButton';
 
 export const dynamic = 'force-dynamic';
 
+// --- Types to Replace 'any' ---
+interface LinkItem {
+  name: string;
+  url: string;
+  description?: string;
+  id?: string;
+  authorId?: string;
+  isDynamic?: boolean;
+}
+
+interface Category {
+  title: string;
+  links: LinkItem[];
+}
+
 // --- 1. YOUR STATIC DATA ---
-const staticCategories = [
+const staticCategories: Category[] = [
   {
     title: "About Studying Abroad",
     links: [
@@ -33,15 +49,18 @@ async function getCombinedResources() {
     orderBy: { createdAt: 'desc' },
   });
 
-  const combined = JSON.parse(JSON.stringify(staticCategories));
+  // Deep clone static data and cast to Category[]
+  const combined: Category[] = JSON.parse(JSON.stringify(staticCategories));
 
   dbResources.forEach((res) => {
-    const existingCategory = combined.find((c: any) => c.title === res.category);
-    const newLink = {
+    // FIXED: Removed 'any' by typing combined as Category[]
+    const existingCategory = combined.find((c) => c.title === res.category);
+    
+    const newLink: LinkItem = {
       id: res.id,
       name: res.title,
       url: res.fileUrl,
-      description: res.description,
+      description: res.description || undefined,
       authorId: res.authorId,
       isDynamic: true,
     };
@@ -100,14 +119,15 @@ export default async function ResourcesPage() {
                 {/* Dynamic Accordion */}
                 {categories.length > 0 ? (
                   <Accordion type="multiple" className="w-full" defaultValue={[categories[0].title]}>
-                    {categories.map((category: any) => (
+                    {/* FIXED: Removed 'any' by using typed categories */}
+                    {categories.map((category) => (
                       <AccordionItem value={category.title} key={category.title}>
                         <AccordionTrigger className="text-2xl font-bold text-left">
                           {category.title}
                         </AccordionTrigger>
                         <AccordionContent>
                           <ul className="space-y-6 pt-4">
-                            {category.links.map((link: any, index: number) => {
+                            {category.links.map((link, index) => {
                               // Check permission: Admin OR Owner of the resource
                               const isOwner = session?.user?.id === link.authorId;
                               const canDelete = (isOwner || isAdmin) && link.isDynamic;
@@ -134,7 +154,7 @@ export default async function ResourcesPage() {
                                   </div>
 
                                   {/* Delete Button */}
-                                  {canDelete && (
+                                  {canDelete && link.id && (
                                     <DeleteResourceButton id={link.id} />
                                   )}
                                 </li>
