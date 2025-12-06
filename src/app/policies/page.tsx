@@ -2,14 +2,14 @@ import React from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { FileText, Award, Users, Handshake, Calendar, AlertTriangle, Info } from 'lucide-react';
+// FIXED: Removed unused 'Users' and 'Handshake' imports
+import { FileText, Award, Calendar, AlertTriangle, Info } from 'lucide-react';
 import ApplySidebar from '@/components/residebar';
 
 export default function PoliciesPage() {
   return (
     <div className="bg-background text-foreground">
       
-
       {/* Page Header */}
       <header className="bg-muted py-20 text-center">
         <div className="container mx-auto px-4">
@@ -43,7 +43,7 @@ export default function PoliciesPage() {
 
                 {/* Award Benefits */}
                 <section id="benefits">
-                     <div className="flex items-start">
+                      <div className="flex items-start">
                         <Award className="w-10 h-10 text-primary mr-6 mt-1 flex-shrink-0" />
                         <div>
                             <h2 className="text-3xl font-bold mb-4">Award Benefits</h2>
@@ -70,7 +70,8 @@ export default function PoliciesPage() {
                     <p className="text-muted-foreground text-lg mb-4">Applications are typically invited in February and results declared in May. The selection is purely merit-based and entails:</p>
                     <ul className="list-disc list-inside text-muted-foreground space-y-2 text-lg">
                         <li>Personal information based on a Curriculum Vitae/Resume.</li>
-                        <li>Copy of mark sheets for all years of bachelor's and master's degrees.</li>
+                        {/* FIXED: Escaped single quotes with &apos; */}
+                        <li>Copy of mark sheets for all years of bachelor&apos;s and master&apos;s degrees.</li>
                         <li>Copies of co-curricular and extra-curricular certificates.</li>
                         <li>Responses to essay-type questions.</li>
                     </ul>
@@ -142,4 +143,3 @@ export default function PoliciesPage() {
     </div>
   );
 }
-

@@ -29,8 +29,14 @@ export async function updateProfile(formData: FormData) {
     return { error: 'First and last name are required.' };
   }
 
-  // Prepare the update object
-  const updateData: any = {
+  // FIXED: Removed 'any' and defined explicit type
+  const updateData: {
+    firstName: string;
+    lastName: string;
+    bio: string;
+    phoneNumber: string;
+    passwordHash?: string;
+  } = {
     firstName,
     lastName,
     bio,
