@@ -35,9 +35,11 @@ export default function ResourceUploadForm() {
 
     try {
       // 1. Upload to Supabase
-      const fileName = `${Date.now()}-${selectedFile.name.replaceAll(' ', '_')}`;
+      // Sanitize filename
+      const fileName = `${Date.now()}-${selectedFile.name.replace(/\s+/g, '_')}`;
+      
       const { data, error: uploadError } = await supabase.storage
-        .from('resource-files') // Ensure this bucket exists!
+        .from('resource-files') 
         .upload(fileName, selectedFile);
 
       if (uploadError) throw uploadError;
@@ -51,15 +53,18 @@ export default function ResourceUploadForm() {
       const result = await createResource(formData, publicUrl, selectedFile.type);
       
       if (result.error) {
-        toast.error(result.error);
+        // FIXED: Use 'result.error as string' or a fallback to satisfy TypeScript
+        toast.error(result.error || "An unknown error occurred");
       } else {
-        toast.success(result.message);
+        // FIXED: Ensure message is treated as a string too
+        toast.success(result.message || "Resource uploaded successfully!");
         formRef.current?.reset();
         setSelectedFile(null);
       }
-    } catch (err: any) {
-      console.error(err);
-      toast.error("Upload failed: " + err.message);
+    } catch (error: unknown) {
+      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during upload";
+      toast.error("Upload failed: " + errorMessage);
     } finally {
       setIsPending(false);
     }

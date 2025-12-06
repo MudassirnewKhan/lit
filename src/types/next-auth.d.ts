@@ -1,7 +1,8 @@
-// File Path: types/next-auth.d.ts
+// File Path: src/types/next-auth.d.ts
 
 import { DefaultSession, DefaultUser } from 'next-auth';
-import { JWT, DefaultJWT } from 'next-auth/jwt';
+// FIXED: Removed 'JWT' from imports to solve "defined but never used" warning
+import { DefaultJWT } from 'next-auth/jwt';
 
 // 1. Extend the JWT type
 declare module 'next-auth/jwt' {

@@ -1,7 +1,8 @@
 import { PrismaClient } from "@prisma/client";
-import { AuthOptions } from "next-auth";
+import { AuthOptions, Session, User } from "next-auth"; // Import types
+import { JWT } from "next-auth/jwt"; // Import JWT type
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from 'bcrypt'; // Ensure using bcryptjs consistently
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -31,7 +32,7 @@ export const authOptions: AuthOptions = {
           email: user.email,
           name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
           roles: user.roles.map(roleAssignment => roleAssignment.role),
-          // --- NEW: Pass batchYear from DB to the User Object ---
+          // --- Pass batchYear from DB to the User Object ---
           batchYear: user.batchYear, 
         };
       },
@@ -50,18 +51,27 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.roles = (user as any).roles;
-        // --- NEW: Save batchYear to the Token ---
-        token.batchYear = (user as any).batchYear;
+        // FIXED: Replaced 'as any' with specific type intersection
+        const customUser = user as User & { roles: string[]; batchYear: string | null };
+        
+        token.roles = customUser.roles;
+        token.batchYear = customUser.batchYear;
       }
       return token;
     },
-    async session({ session, token }) {
+    // FIXED: Typed the arguments explicitly
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.roles = token.roles as string[]; 
-        // --- NEW: Save batchYear to the Session (accessible in Frontend) ---
-        session.user.batchYear = token.batchYear as string | null;
+        
+        // FIXED: Cast session.user to custom type to allow assignment without 'any'
+        const customSessionUser = session.user as User & { 
+          roles: string[]; 
+          batchYear: string | null 
+        };
+
+        customSessionUser.roles = token.roles as string[]; 
+        customSessionUser.batchYear = token.batchYear as string | null;
       }
       return session;
     },
