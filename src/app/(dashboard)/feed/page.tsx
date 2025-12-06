@@ -6,6 +6,13 @@ import { prisma } from '@/lib/prisma';
 import CreatePostForm from '@/components/feed/CreatePostForm';
 import LoadMorePosts from '@/components/feed/LoadMorePosts';
 
+// Define the Attachment type locally or import it if shared
+type Attachment = {
+  url: string;
+  type: string;
+  name: string;
+};
+
 async function getInitialPosts() {
   const posts = await prisma.post.findMany({
     take: 10,
@@ -23,9 +30,11 @@ async function getInitialPosts() {
 
   return posts.map(post => ({
     ...post,
+    // FIX: Explicitly cast 'attachments' to Attachment[] and handle null
+    attachments: (post.attachments as unknown as Attachment[]) || [],
     author: {
       name: `${post.author.firstName || ''} ${post.author.lastName || ''}`.trim() || 'Unknown User',
-      roles: post.author.roles.map(r => r.role),
+      roles: post.author.roles.map(r => r.role), // Ensure this maps to string[] if UserRole is an enum
     },
     comments: post.comments.map(c => ({
       ...c,
@@ -63,7 +72,7 @@ export default async function FeedPage() {
         <LoadMorePosts 
           initialPosts={initialPosts} 
           currentUserId={session.user.id}
-          isAdmin={canModerate} // Pass the corrected permission
+          isAdmin={canModerate} 
         />
       </div>
     </div>

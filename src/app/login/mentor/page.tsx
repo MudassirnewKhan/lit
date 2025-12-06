@@ -30,10 +30,10 @@ export default function MentorLogin() {
         setStatus('idle');
       } else if (result?.ok) {
         toast.success('Welcome back!');
-        // Force redirect to Dashboard
         window.location.href = '/dashboard'; 
       }
-    } catch (err) {
+    } catch {
+      // FIXED: Removed unused 'err' variable
       setStatus('idle');
       toast.error('Something went wrong.');
     }

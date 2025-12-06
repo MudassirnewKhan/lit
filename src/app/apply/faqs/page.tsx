@@ -10,6 +10,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { ArrowRight } from 'lucide-react';
 import ApplySidebar from '@/components/residebar';
+// FIXED: Import Link
+import Link from 'next/link';
 
 // A more comprehensive list of FAQs organized by category
 const faqCategories = [
@@ -104,11 +106,12 @@ export default function FaqsPage() {
                 </p>
                 <div className="flex justify-center items-center gap-4 mt-6">
                     <Button variant="outline">Contact Support</Button>
-                    <a href="/apply/start">
+                    {/* FIXED: Replaced <a> with Link */}
+                    <Link href="/apply/start">
                         <Button size="lg">
                             Start Your Application <ArrowRight className="ml-2 h-5 w-5" />
                         </Button>
-                    </a>
+                    </Link>
                 </div>
             </section>
           </div>
@@ -122,4 +125,3 @@ export default function FaqsPage() {
     </div>
   );
 }
-

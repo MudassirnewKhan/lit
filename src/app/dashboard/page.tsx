@@ -14,7 +14,6 @@ export default async function Dashboard() {
   const roles = session.user.roles || [];
   
   // --- TRAFFIC CONTROL ---
-  // If user is Admin or Sub-admin, redirect them to the Admin Dashboard immediately
   if (roles.includes('admin') || roles.includes('subadmin')) {
     redirect('/admin/dashboard');
   }
@@ -22,7 +21,7 @@ export default async function Dashboard() {
 
   const isMentor = roles.includes('mentor');
   const isSponsor = roles.includes('sponsor');
-  const isStudent = roles.includes('awardee');
+  // FIXED: Removed unused 'isStudent' variable
 
   return (
     <div className="container mx-auto py-10 px-4">

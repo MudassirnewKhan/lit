@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { signIn } from "next-auth/react";
-import { useRouter } from 'next/navigation';
+// FIXED: Removed useRouter import
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
@@ -14,7 +14,7 @@ export default function StudentLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
-  const router = useRouter();
+  // FIXED: Removed unused router variable
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +22,6 @@ export default function StudentLogin() {
     setError('');
 
     try {
-      // 1. Attempt to sign in
       const result = await signIn('credentials', {
         redirect: false,
         email,
@@ -33,13 +32,11 @@ export default function StudentLogin() {
         setError('Invalid email or password.');
         setStatus('idle');
       } else if (result?.ok) {
-        // 2. THE FIX: Force a hard refresh
-        // Instead of router.push(), we use window.location.href.
-        // This forces the browser to request the entire page from the server again.
-        // The server will see the new session cookie and render the Navbar with "My Dashboard" instead of "Login".
+        // Force a hard refresh to update session in Navbar
         window.location.href = '/dashboard';
       }
-    } catch (err) {
+    } catch {
+      // FIXED: Removed unused 'err' variable
       setStatus('idle');
       setError('Something went wrong.');
     }
@@ -83,8 +80,4 @@ export default function StudentLogin() {
       </Card>
     </div>
   );
-
-
 }
-
-  
