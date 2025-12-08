@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BookOpen, Users, Trophy, GraduationCap, Globe } from "lucide-react";
-// FIXED: Imported Image from next/image
 import Image from "next/image";
 
 export default function LandingPage() {
@@ -23,11 +22,13 @@ export default function LandingPage() {
             Empowering the next generation of global leaders through mentorship, financial support, and world-class guidance.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/login">
+            {/* --- FIX #1: Point to /apply/start --- */}
+            <Link href="/apply/start">
               <Button size="lg" className="w-full sm:w-auto text-lg px-8 py-6 bg-orange-500 hover:bg-orange-600 text-white border-0 shadow-lg shadow-orange-500/20 transition-all hover:scale-105">
                 Apply Now <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
+            
             <Link href="/resources">
                <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-8 py-6 bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm transition-all">
                 Explore Resources
@@ -42,7 +43,6 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">Why Join LIT?</h2>
-            {/* FIXED: Escaped single quote using &apos; */}
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">We don&apos;t just provide funds; we build careers.</p>
           </div>
           
@@ -113,7 +113,6 @@ export default function LandingPage() {
           </div>
           
           <div className="grid md:grid-cols-4 gap-6">
-             {/* FIXED: Replaced <img> with <Image /> to fix optimization warnings */}
              <div className="group relative overflow-hidden rounded-2xl aspect-[3/4]">
                 <Image 
                   src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80" 
@@ -171,16 +170,17 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <GraduationCap className="h-16 w-16 mx-auto mb-6 text-blue-300" />
           <h2 className="text-4xl font-bold mb-6">Ready to Start Your Journey?</h2>
-          {/* FIXED: Escaped quotes using &apos; */}
           <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
             Applications for the 2025 cohort are now open. Don&apos;t miss your chance to be part of something extraordinary.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/login">
+            {/* --- FIX #2: Point to /apply/start --- */}
+            <Link href="/apply/start">
               <Button size="lg" className="w-full sm:w-auto text-lg px-8 py-6 bg-white text-blue-900 hover:bg-blue-50 font-bold">
                 Apply Now
               </Button>
             </Link>
+            
             <Link href="/policies">
               <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-8 py-6 border-blue-400 text-blue-100 hover:bg-blue-800 hover:text-white">
                 Read Eligibility
