@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetClose, SheetTrigger } from '@/components/ui/sheet';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Menu, UserCircle, Shield } from 'lucide-react'; 
+import { Menu, UserCircle, Shield, GraduationCap, Users } from 'lucide-react'; // Added 'Users' icon for Network
 import LogoutButton from './LogoutButton';
 import { Session } from 'next-auth';
 
@@ -76,9 +76,16 @@ export default function NavbarClient({ session, navLinks, loginLinks }: { sessio
                   <DropdownMenuItem asChild><Link href="/admin/dashboard">Dashboard</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link href="/admin/applications">Applications</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link href="/admin/users">Manage Users</Link></DropdownMenuItem>
-                  {/* --- NEW LINK FOR ADMINS/STAFF --- */}
+                  
+                  {/* --- MANAGE ALUMNI --- */}
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link href="/admin/alumni" className="flex items-center gap-2">
+                         <GraduationCap className="h-4 w-4" /> Manage Alumni
+                    </Link>
+                  </DropdownMenuItem>
+                  {/* --------------------- */}
+
                   <DropdownMenuItem asChild><Link href="/mentorship">Mentorship Hub</Link></DropdownMenuItem>
-                  {/* -------------------------------- */}
                   <DropdownMenuItem asChild><Link href="/feed">Community Feed</Link></DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}><LogoutButton /></DropdownMenuItem>
@@ -98,6 +105,15 @@ export default function NavbarClient({ session, navLinks, loginLinks }: { sessio
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild><Link href="/dashboard">My Dashboard</Link></DropdownMenuItem>
                     <DropdownMenuItem asChild><Link href="/mentorship">Mentorship Hub</Link></DropdownMenuItem>
+                    
+                    {/* --- NEW: NETWORK DIRECTORY --- */}
+                    <DropdownMenuItem asChild>
+                        <Link href="/network" className="flex items-center gap-2">
+                            <Users className="h-4 w-4" /> Network Directory
+                        </Link>
+                    </DropdownMenuItem>
+                    {/* ------------------------------ */}
+
                     <DropdownMenuItem asChild><Link href="/profile">My Profile</Link></DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}><LogoutButton /></DropdownMenuItem>
@@ -155,9 +171,10 @@ export default function NavbarClient({ session, navLinks, loginLinks }: { sessio
                        <SheetClose asChild><Link href="/admin/dashboard"><Button variant="outline" className="w-full">Admin Dashboard</Button></Link></SheetClose>
                        <SheetClose asChild><Link href="/admin/applications"><Button variant="ghost" className="w-full justify-start">Applications</Button></Link></SheetClose>
                        <SheetClose asChild><Link href="/admin/users"><Button variant="ghost" className="w-full justify-start">Manage Users</Button></Link></SheetClose>
-                       {/* --- NEW LINK FOR MOBILE ADMINS --- */}
+                       
+                       <SheetClose asChild><Link href="/admin/alumni"><Button variant="ghost" className="w-full justify-start">Manage Alumni</Button></Link></SheetClose>
+
                        <SheetClose asChild><Link href="/mentorship"><Button variant="ghost" className="w-full justify-start">Mentorship Hub</Button></Link></SheetClose>
-                       {/* ---------------------------------- */}
                        <SheetClose asChild><Link href="/feed"><Button variant="ghost" className="w-full justify-start">Community Feed</Button></Link></SheetClose>
                        <LogoutButton isMobile={true} />
                      </>
@@ -165,6 +182,11 @@ export default function NavbarClient({ session, navLinks, loginLinks }: { sessio
                       <>
                         <SheetClose asChild><Link href="/dashboard"><Button variant="outline" className="w-full">My Dashboard</Button></Link></SheetClose>
                         <SheetClose asChild><Link href="/mentorship"><Button variant="ghost" className="w-full justify-start">Mentorship</Button></Link></SheetClose>
+                        
+                        {/* --- NEW: NETWORK DIRECTORY MOBILE --- */}
+                        <SheetClose asChild><Link href="/network"><Button variant="ghost" className="w-full justify-start">Network Directory</Button></Link></SheetClose>
+                        {/* ------------------------------------- */}
+                        
                         <LogoutButton isMobile={true} />
                       </>
                    ) : (

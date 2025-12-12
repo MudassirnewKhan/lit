@@ -44,7 +44,9 @@ model User {
   mfaSecret     String?   @unique @map("mfa_secret")
   mfaEnabled    Boolean   @default(false) @map("mfa_enabled")
 
+
   // Relations
+  alumniEntry  Alumni[]
   roles         UserRoleAssignment[]
   posts         Post[]
   comments      Comment[]
@@ -101,6 +103,32 @@ model Application {
 
   @@map("applications")
 }
+
+model Alumni {
+  id          String   @id @default(cuid())
+  fullName    String
+  
+  // This helps group them (e.g., "2024-25", "2018 Scholar")
+  batchYear   String   
+
+  // "AWARDEE", "SUCCESS_STORY", or "TESTIMONIAL"
+  category    String   
+
+  userId      String?  
+  user        User?    @relation(fields: [userId], references: [id])
+
+  // Optional fields depending on the category
+  institution String?  // For Awardees (e.g., "IIT Bombay")
+  achievement String?  // For Successful Scholars (e.g., "PhD, Boston Univ")
+  quote       String?  // For Testimonials
+  photoUrl    String?  // For Testimonials (or others if you add photos later)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+  
+
 model Post {
   id          String   @id @default(cuid())
   createdAt   DateTime @default(now())

@@ -6,13 +6,18 @@ import bcrypt from 'bcrypt';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import React from 'react'; 
-import { Resend } from 'resend';
-import { render } from '@react-email/render'; // <--- 1. Add this import
+import { render } from '@react-email/render'; 
 import WelcomeEmail from '@/components/emails/WelcomeEmail';
+import nodemailer from 'nodemailer'; // <--- CHANGED: Import Nodemailer
 
-// Initialize Resend
-const apiKey = process.env.RESEND_API_KEY || 're_missing_key';
-const resend = new Resend(apiKey);
+// 1. Configure Gmail Transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER, // Your email
+    pass: process.env.GMAIL_PASS, // Your App Password
+  },
+});
 
 // Helper to verify admin status
 async function verifyAdmin() {
@@ -34,13 +39,13 @@ export async function approveApplication(applicationId: string) {
       throw new Error('Application not found or already processed.');
     }
 
-    // 1. Generate a temp password
+    // Generate a temp password
     const tempPassword = Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
     
     let isNewUser = false;
 
-    // 2. Transaction: Update App + Handle User
+    // Transaction: Update App + Handle User
     await prisma.$transaction(async (tx) => {
       // a. Update application status
       await tx.application.update({ 
@@ -78,6 +83,7 @@ export async function approveApplication(applicationId: string) {
             firstName: application.fullName.split(' ')[0],
             lastName: application.fullName.split(' ').slice(1).join(' '),
             passwordHash: hashedPassword,
+            batchYear: "2025", // Optional: Add default batch if needed
           },
         });
         userId = newUser.id;
@@ -88,13 +94,12 @@ export async function approveApplication(applicationId: string) {
       }
     });
 
-    // 3. Send the welcome email
+    // 2. Prepare the Email Content
     const passwordEmailText = isNewUser 
         ? tempPassword 
         : "(Use your existing password)";
 
-    // --- FIX: Manually render the email to HTML ---
-    // This bypasses the 'render2 is not a function' error in the SDK
+    // Render the React component to an HTML string
     const emailHtml = await render(
       <WelcomeEmail
         applicantName={application.fullName}
@@ -103,11 +108,12 @@ export async function approveApplication(applicationId: string) {
       />
     );
 
-    await resend.emails.send({
-      from: 'LIT Portal Admin <onboarding@resend.dev>', // Update to your domain
+    // 3. Send via Nodemailer (Gmail)
+    await transporter.sendMail({
+      from: `"LIT Scholarship Admin" <${process.env.GMAIL_USER}>`, // Sender
       to: application.email,
-      subject: 'Your LIT Scholarship Application has been Approved!',
-      html: emailHtml, // <--- Use 'html' property instead of 'react'
+      subject: '🎉 Your LIT Scholarship Application has been Approved!',
+      html: emailHtml, // Pass the rendered HTML here
     });
 
     revalidatePath('/admin/applications');
@@ -126,6 +132,9 @@ export async function rejectApplication(applicationId: string) {
       where: { id: applicationId },
       data: { status: 'rejected' },
     });
+    
+    // Optional: Send Rejection Email here if you want
+    
     revalidatePath('/admin/applications');
     return { success: true, message: `Application for ${application.fullName} rejected.` };
   } catch (error: any) {

@@ -8,20 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 
-// Define explicit types to avoid 'any'
-type Attachment = { url: string; type: string; name: string; };
-type Comment = { id: string; content: string; createdAt: Date; authorId: string; author: { name: string; roles: string[] } };
-
-type PostWithAuthor = {
-  id: string;
-  createdAt: Date;
-  content: string;
-  imageUrl?: string | null;
-  attachments: Attachment[]; // FIXED: Typed correctly
-  authorId: string;
-  author: { name: string | null; roles: string[] };
-  comments: Comment[]; // FIXED: Typed correctly
-};
+import type { PostWithAuthor, Attachment } from '@/types/feed';
 
 interface LoadMorePostsProps {
   initialPosts: PostWithAuthor[];
@@ -35,54 +22,53 @@ export default function LoadMorePosts({ initialPosts, currentUserId, isAdmin }: 
   const [hasMore, setHasMore] = useState(true);
   const { ref, inView } = useInView();
 
-  // --- REALTIME SUBSCRIPTION ---
+  // Realtime Post Listener
   useEffect(() => {
     const channel = supabase
-      .channel('realtime-posts-feed') 
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'Post',
-        },
-        async (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const newPost = await fetchPost(payload.new.id);
-            if (newPost) {
-              setPosts((prev) => {
-                if (prev.some(p => p.id === newPost.id)) return prev;
-                // Cast to ensure type compatibility if fetchPost returns loose types
-                return [newPost as unknown as PostWithAuthor, ...prev];
-              });
-              toast.success('New post received!');
-            }
-          }
-          
-          if (payload.eventType === 'DELETE') {
-            setPosts((prev) => prev.filter((p) => p.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
-            console.error("Realtime Error: Check Console");
-        }
-      });
+      .channel('realtime-posts-feed')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Post' }, async (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const rawPost = await fetchPost(payload.new.id);
+          if (rawPost) {
+            const formattedPost: PostWithAuthor = {
+              ...rawPost,
+              attachments: (rawPost.attachments as unknown as Attachment[]) || [],
+              author: {
+                id: rawPost.author.id,
+                name: rawPost.author.name,
+                roles: rawPost.author.roles.map((r: any) => (typeof r === 'string' ? r : r.role)),
+              },
+              comments: rawPost.comments.map((c: any) => ({
+                ...c,
+                author: {
+                  id: c.author.id,
+                  name: c.author.name,
+                  roles: c.author.roles.map((r: any) => (typeof r === 'string' ? r : r.role)),
+                },
+              })),
+            };
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+            setPosts((prev) => (prev.some((p) => p.id === formattedPost.id) ? prev : [formattedPost, ...prev]));
+            toast.success('New post received!');
+          }
+        }
+
+        if (payload.eventType === 'DELETE') {
+          setPosts((prev) => prev.filter((p) => p.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
   }, []);
 
-  // FIXED: Wrapped in useCallback to satisfy useEffect dependency rules
+  // Pagination Loader
   const loadMore = useCallback(async () => {
     const nextPosts = await fetchPosts(page);
-    if (nextPosts.length === 0) {
+    if (!nextPosts.length) {
       setHasMore(false);
     } else {
-      // FIXED: Used expect-error instead of ignore
-      // @ts-expect-error - fetchPosts return type might be slightly different from PostWithAuthor but compatible in runtime
+      // @ts-expect-error backend returns correct structure
       setPosts((prev) => [...prev, ...nextPosts]);
       setPage((prev) => prev + 1);
     }
@@ -92,7 +78,6 @@ export default function LoadMorePosts({ initialPosts, currentUserId, isAdmin }: 
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   };
 
-  // FIXED: Added loadMore to dependency array
   useEffect(() => {
     if (inView && hasMore) loadMore();
   }, [inView, hasMore, loadMore]);
@@ -104,24 +89,25 @@ export default function LoadMorePosts({ initialPosts, currentUserId, isAdmin }: 
   return (
     <>
       {posts.map((post) => (
-        <PostCard 
-          key={post.id} 
-          post={post} 
-          currentUserId={currentUserId} 
+        <PostCard
+          key={post.id}
+          post={post}
+          currentUserId={currentUserId}
           isAdmin={isAdmin}
           onDelete={removePostFromList}
         />
       ))}
-      
+
       {hasMore && (
         <div ref={ref} className="flex justify-center p-6">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       )}
-      
+
       {!hasMore && posts.length > 0 && (
-        // FIXED: Escaped single quote
-        <p className="text-center text-sm text-muted-foreground py-4">You&apos;ve reached the end of the feed.</p>
+        <p className="text-center text-sm text-muted-foreground py-4">
+          You&apos;ve reached the end of the feed.
+        </p>
       )}
     </>
   );

@@ -16,12 +16,13 @@ export async function middleware(request: NextRequest) {
   const adminLoginPath = `/${process.env.ADMIN_LOGIN_PATH}`;
 
   // --- 1. Protect User Routes ---
-  // NOTE: I removed '/resources' from this list so it is now Public.
+  // Added '/network' to this list so it requires login
   if (
     pathname.startsWith('/dashboard') || 
     pathname.startsWith('/feed') || 
     pathname.startsWith('/mentorship') || 
-    pathname.startsWith('/profile')
+    pathname.startsWith('/profile') ||
+    pathname.startsWith('/network') // <--- ADDED THIS
   ) {
     if (!token) {
       // If trying to access these private pages without login, send to student login
@@ -31,7 +32,9 @@ export async function middleware(request: NextRequest) {
 
   // --- 2. Admin & Sub-admin Logic ---
   // Check if user has EITHER 'admin' or 'subadmin' role
-  const isAdminUser = token?.roles?.some((role: string) => ['admin', 'subadmin'].includes(role));
+  // We explicitly cast token.roles to any or array to avoid TS errors if needed
+  const userRoles = (token?.roles as string[]) || [];
+  const isAdminUser = userRoles.some((role: string) => ['admin', 'subadmin'].includes(role));
   
   const isAccessingAdminRoute = pathname.startsWith('/admin');
 

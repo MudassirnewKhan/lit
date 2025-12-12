@@ -6,7 +6,6 @@ import { prisma } from '@/lib/prisma';
 import CreatePostForm from '@/components/feed/CreatePostForm';
 import LoadMorePosts from '@/components/feed/LoadMorePosts';
 
-// Define the Attachment type locally or import it if shared
 type Attachment = {
   url: string;
   type: string;
@@ -19,10 +18,28 @@ async function getInitialPosts() {
     orderBy: { createdAt: 'desc' },
     include: {
       author: {
-        select: { firstName: true, lastName: true, roles: { select: { role: true } } },
+        // --- UPDATED: Select 'id' so we can link to profile ---
+        select: { 
+            id: true, 
+            firstName: true, 
+            lastName: true, 
+            // image: true, // Uncomment if you added 'image' to your User schema
+            roles: { select: { role: true } } 
+        },
       },
       comments: {
-        include: { author: { select: { firstName: true, lastName: true, roles: { select: { role: true } } } } },
+        include: { 
+            author: { 
+                // --- UPDATED: Select 'id' for comments too ---
+                select: { 
+                    id: true, 
+                    firstName: true, 
+                    lastName: true, 
+                    // image: true, 
+                    roles: { select: { role: true } } 
+                } 
+            } 
+        },
         orderBy: { createdAt: 'asc' }
       }
     },
@@ -30,16 +47,19 @@ async function getInitialPosts() {
 
   return posts.map(post => ({
     ...post,
-    // FIX: Explicitly cast 'attachments' to Attachment[] and handle null
     attachments: (post.attachments as unknown as Attachment[]) || [],
     author: {
+      id: post.author.id, // <--- Pass the ID
       name: `${post.author.firstName || ''} ${post.author.lastName || ''}`.trim() || 'Unknown User',
-      roles: post.author.roles.map(r => r.role), // Ensure this maps to string[] if UserRole is an enum
+      // image: post.author.image, 
+      roles: post.author.roles.map(r => r.role),
     },
     comments: post.comments.map(c => ({
       ...c,
       author: {
+        id: c.author.id, // <--- Pass the ID
         name: `${c.author.firstName || ''} ${c.author.lastName || ''}`.trim() || 'Unknown User',
+        // image: c.author.image,
         roles: c.author.roles.map(r => r.role),
       }
     }))
@@ -56,7 +76,6 @@ export default async function FeedPage() {
   const initialPosts = await getInitialPosts();
   const roles = session.user.roles || [];
 
-  // FIX: 'isAdmin' prop now includes Sub-admins, giving them delete buttons
   const canModerate = roles.includes('admin') || roles.includes('subadmin');
 
   return (
