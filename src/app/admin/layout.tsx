@@ -7,7 +7,10 @@ import {
   Users, 
   MessageSquare, 
   Shield,
-  LogOut
+  // 1. NEW IMPORTS
+  GraduationCap, 
+  Library,
+  ScrollText // Using this for Policies to differentiate from the Shield logo
 } from 'lucide-react';
 import LogoutButton from '@/components/LogoutButton';
 import { getServerSession } from 'next-auth';
@@ -48,6 +51,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       label: 'Manage Users', 
       icon: <Users className="w-5 h-5" /> 
     },
+    
     { 
       href: '/feed', 
       label: 'Community Feed', 
@@ -58,7 +62,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-screen bg-slate-50">
       {/* Sidebar Navigation */}
-      <aside className="hidden w-64 flex-col border-r bg-white p-6 md:flex shadow-sm">
+      <aside className="hidden w-64 flex-col border-r bg-white p-6 md:flex shadow-sm fixed h-full">
         <div className="mb-8 flex items-center gap-2 text-primary">
           <Shield className="h-8 w-8" />
           <div>
@@ -69,7 +73,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
         </div>
 
-        <nav className="flex flex-col gap-2 flex-1">
+        <nav className="flex flex-col gap-2 flex-1 overflow-y-auto">
           {adminLinks.map((link) => (
             <Link key={link.href} href={link.href}>
               <Button 
@@ -93,8 +97,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Mobile Header (Optional, if needed later) */}
+      {/* Added ml-64 to push content to the right of the fixed sidebar */}
+      <div className="flex flex-1 flex-col overflow-hidden md:ml-64">
+        {/* Mobile Header */}
         <header className="md:hidden flex items-center h-16 px-6 border-b bg-white">
            <span className="font-bold">LIT Admin</span>
         </header>

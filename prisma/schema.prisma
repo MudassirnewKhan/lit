@@ -55,6 +55,24 @@ model User {
   batchYear     String?   // e.g., "2024", "2025". Only relevant for Students.
 
 }
+model SuccessStory {
+  id          String   @id @default(cuid())
+  
+  // --- Personal Details ---
+  fullName    String
+  email       String?  // Optional: In case you need to contact them later
+  phoneNumber String?  // Optional: For admin reference
+  
+  // --- Success Profile ---
+  batchYear   String   // e.g. "2018"
+  achievement String   // e.g. "Senior Engineer at Google" or "PhD, Oxford"
+  linkedIn    String?  // URL to their profile
+  image       String?  // URL to their photo (e.g. from Cloudinary/Supabase)
+
+  // --- Meta ---
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
 
 model Resource {
   id          String   @id @default(cuid())

@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetClose, SheetTrigger } from '@/components/ui/sheet';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Menu, UserCircle, Shield, GraduationCap, Users } from 'lucide-react'; // Added 'Users' icon for Network
+import { Menu, UserCircle, Shield, Users, BookOpen, GraduationCap } from 'lucide-react'; 
 import LogoutButton from './LogoutButton';
 import { Session } from 'next-auth';
+import DonateModal from '@/components/DonateModal';
 
 type NavLink = {
   label: string;
@@ -24,24 +25,30 @@ export default function NavbarClient({ session, navLinks, loginLinks }: { sessio
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   
   const isAdminUser = session?.user?.roles?.some(r => ['admin', 'subadmin'].includes(r));
-  
   const isStudent = session?.user?.roles?.includes('awardee');
   const isMentor = session?.user?.roles?.includes('mentor');
   const isSponsor = session?.user?.roles?.includes('sponsor');
-
   const isUser = isStudent || isMentor || isSponsor;
+
+  // -----------------------------------------------------------
+  // 1. FILTER LINKS: If logged in, hide "Home, About, Apply"
+  // -----------------------------------------------------------
+  const visibleNavLinks = session ? [] : navLinks;
 
   return (
     <header className="w-full h-16 bg-card sticky top-0 z-50 border-b flex items-center shadow-sm">
       <div className="container mx-auto flex items-center justify-between px-4 md:px-8">
-        <Link href="/" className="font-bold text-xl text-primary">
+        
+        {/* LOGO: Redirects to Dashboard if logged in, else Home */}
+        <Link href={session ? "/dashboard" : "/"} className="font-bold text-xl text-primary">
           LIT Scholarship Portal
         </Link>
 
         {/* --- DESKTOP NAVIGATION --- */}
         <nav className="hidden md:flex items-center gap-2">
-          {/* Standard Public Links (About, Apply, etc.) */}
-          {navLinks.map((link) =>
+          
+          {/* 2. USE THE FILTERED LIST HERE */}
+          {visibleNavLinks.map((link) =>
             link.subLinks ? (
               <div key={link.label} onMouseEnter={() => setOpenDropdown(link.label)} onMouseLeave={() => setOpenDropdown(null)}>
                 <DropdownMenu open={openDropdown === link.label}>
@@ -77,23 +84,35 @@ export default function NavbarClient({ session, navLinks, loginLinks }: { sessio
                   <DropdownMenuItem asChild><Link href="/admin/applications">Applications</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link href="/admin/users">Manage Users</Link></DropdownMenuItem>
                   
-                  {/* --- MANAGE ALUMNI --- */}
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/admin/alumni" className="flex items-center gap-2">
-                         <GraduationCap className="h-4 w-4" /> Manage Alumni
-                    </Link>
+                  {/* Removed Manage Success Stories Link */}
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem asChild>
+                      <Link href="/resources" className="flex items-center gap-2"><BookOpen className="h-4 w-4" /> Resources</Link>
                   </DropdownMenuItem>
-                  {/* --------------------- */}
+                  <DropdownMenuItem asChild>
+                      <Link href="/alumni" className="flex items-center gap-2"><GraduationCap className="h-4 w-4" /> Alumni</Link>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
 
+                  <DropdownMenuItem asChild>
+                      <Link href="/network" className="flex items-center gap-2"><Users className="h-4 w-4" /> Network Directory</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                      <Link href="/profile" className="flex items-center gap-2"><UserCircle className="h-4 w-4" /> My Profile</Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild><Link href="/mentorship">Mentorship Hub</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link href="/feed">Community Feed</Link></DropdownMenuItem>
+                  
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}><LogoutButton /></DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
             ) : isUser ? (
-              // VIEW 2: STUDENT / MENTOR / SPONSOR
+              // VIEW 2: LOGGED IN USER
               <>
                 <Link href="/feed"><Button variant="ghost">Community Feed</Button></Link>
                 <DropdownMenu>
@@ -105,15 +124,9 @@ export default function NavbarClient({ session, navLinks, loginLinks }: { sessio
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild><Link href="/dashboard">My Dashboard</Link></DropdownMenuItem>
                     <DropdownMenuItem asChild><Link href="/mentorship">Mentorship Hub</Link></DropdownMenuItem>
-                    
-                    {/* --- NEW: NETWORK DIRECTORY --- */}
                     <DropdownMenuItem asChild>
-                        <Link href="/network" className="flex items-center gap-2">
-                            <Users className="h-4 w-4" /> Network Directory
-                        </Link>
+                        <Link href="/network" className="flex items-center gap-2"><Users className="h-4 w-4" /> Network Directory</Link>
                     </DropdownMenuItem>
-                    {/* ------------------------------ */}
-
                     <DropdownMenuItem asChild><Link href="/profile">My Profile</Link></DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}><LogoutButton /></DropdownMenuItem>
@@ -122,9 +135,9 @@ export default function NavbarClient({ session, navLinks, loginLinks }: { sessio
               </>
 
             ) : (
-              // VIEW 3: PUBLIC (Not Logged In)
+              // VIEW 3: PUBLIC
               <>
-                <Link href="/donate"><Button className="bg-green-600 hover:bg-green-700 text-white">Donate</Button></Link>
+                <DonateModal />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild><Button variant="outline">{loginLinks.label}</Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -148,7 +161,9 @@ export default function NavbarClient({ session, navLinks, loginLinks }: { sessio
              </SheetTrigger>
              <SheetContent side="right">
                <nav className="flex flex-col gap-2 mt-8">
-                 {navLinks.map((link) =>
+                 
+                 {/* 3. USE THE FILTERED LIST HERE TOO */}
+                 {visibleNavLinks.map((link) =>
                    link.subLinks ? (
                      <Accordion type="single" collapsible className="w-full" key={link.label}>
                        <AccordionItem value={link.label} className="border-b-0">
@@ -167,32 +182,36 @@ export default function NavbarClient({ session, navLinks, loginLinks }: { sessio
 
                  <div className="border-t pt-4 mt-2 flex flex-col gap-2">
                    {isAdminUser ? (
+                     // ADMIN MOBILE
                      <>
                        <SheetClose asChild><Link href="/admin/dashboard"><Button variant="outline" className="w-full">Admin Dashboard</Button></Link></SheetClose>
                        <SheetClose asChild><Link href="/admin/applications"><Button variant="ghost" className="w-full justify-start">Applications</Button></Link></SheetClose>
                        <SheetClose asChild><Link href="/admin/users"><Button variant="ghost" className="w-full justify-start">Manage Users</Button></Link></SheetClose>
                        
-                       <SheetClose asChild><Link href="/admin/alumni"><Button variant="ghost" className="w-full justify-start">Manage Alumni</Button></Link></SheetClose>
-
+                       {/* Removed Manage Success Stories Link */}
+                       
+                       <SheetClose asChild><Link href="/resources"><Button variant="ghost" className="w-full justify-start">Resources</Button></Link></SheetClose>
+                       <SheetClose asChild><Link href="/alumni"><Button variant="ghost" className="w-full justify-start">Alumni</Button></Link></SheetClose>
+                       
+                       <SheetClose asChild><Link href="/network"><Button variant="ghost" className="w-full justify-start">Network Directory</Button></Link></SheetClose>
+                       <SheetClose asChild><Link href="/profile"><Button variant="ghost" className="w-full justify-start">My Profile</Button></Link></SheetClose>
                        <SheetClose asChild><Link href="/mentorship"><Button variant="ghost" className="w-full justify-start">Mentorship Hub</Button></Link></SheetClose>
                        <SheetClose asChild><Link href="/feed"><Button variant="ghost" className="w-full justify-start">Community Feed</Button></Link></SheetClose>
                        <LogoutButton isMobile={true} />
                      </>
                    ) : isUser ? (
+                      // USER MOBILE
                       <>
                         <SheetClose asChild><Link href="/dashboard"><Button variant="outline" className="w-full">My Dashboard</Button></Link></SheetClose>
                         <SheetClose asChild><Link href="/mentorship"><Button variant="ghost" className="w-full justify-start">Mentorship</Button></Link></SheetClose>
-                        
-                        {/* --- NEW: NETWORK DIRECTORY MOBILE --- */}
                         <SheetClose asChild><Link href="/network"><Button variant="ghost" className="w-full justify-start">Network Directory</Button></Link></SheetClose>
-                        {/* ------------------------------------- */}
-                        
                         <LogoutButton isMobile={true} />
                       </>
                    ) : (
-                     <>
-                       <SheetClose asChild><Link href="/donate"><Button className="w-full bg-green-600 hover:bg-green-700">Donate</Button></Link></SheetClose>
-                       <Accordion type="single" collapsible className="w-full">
+                      // PUBLIC MOBILE
+                      <>
+                        <DonateModal isMobile={true} />
+                        <Accordion type="single" collapsible className="w-full">
                            <AccordionItem value="login-item" className="border-b-0">
                                <AccordionTrigger className="py-2 text-lg font-normal hover:no-underline">{loginLinks.label}</AccordionTrigger>
                                <AccordionContent className="pl-6">
@@ -201,8 +220,8 @@ export default function NavbarClient({ session, navLinks, loginLinks }: { sessio
                                    ))}
                                </AccordionContent>
                            </AccordionItem>
-                       </Accordion>
-                     </>
+                        </Accordion>
+                      </>
                    )}
                  </div>
                </nav>

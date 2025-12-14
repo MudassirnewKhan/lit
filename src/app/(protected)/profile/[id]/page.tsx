@@ -1,96 +1,106 @@
 import React from 'react';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { notFound } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Phone, Calendar, GraduationCap, User, ShieldAlert } from 'lucide-react';
+import { Mail, Phone, Calendar, ShieldCheck, GraduationCap, UserCheck } from 'lucide-react';
 
-interface PageProps {
-  params: { id: string };
-}
-
-export default async function UserProfilePage({ params }: PageProps) {
-  // 1. Fetch user data
+export default async function PublicProfilePage({ params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  
+  // 1. Fetch User with Roles
   const user = await prisma.user.findUnique({
     where: { id: params.id },
-    include: { roles: true } // Check roles to hide admins if needed
+    include: { roles: true }
   });
 
   if (!user) return notFound();
 
-  // 2. Optional: Hide Admins from public view
-  const isStaff = user.roles.some(r => ['admin', 'subadmin'].includes(r.role));
-  if (isStaff) {
-    return (
-        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-4">
-            <ShieldAlert className="h-12 w-12 text-red-500 mb-4" />
-            <h1 className="text-2xl font-bold">Private Profile</h1>
-            <p className="text-muted-foreground">This user profile cannot be viewed publicly.</p>
-        </div>
-    );
-  }
+  // 2. Identify Role
+  const roles = user.roles.map(r => r.role);
+  const isAdmin = roles.includes('admin') || roles.includes('subadmin');
+  const isMentor = roles.includes('mentor');
+  const isScholar = roles.includes('awardee');
 
-  const joinedDate = new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  // 3. Privacy Logic
+  // If it's an Admin, we ALWAYS show the profile (Name/Email)
+  // If it's a Student/Mentor, we check their privacy settings (if you have them)
+  const isOwner = session?.user?.id === user.id;
+  const showPhone = user.phoneNumber;
 
   return (
     <div className="container mx-auto py-10 px-4 max-w-3xl">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row items-center gap-6 mb-8 bg-card p-6 rounded-xl shadow-sm border">
-        <Avatar className="h-24 w-24 border-2 border-primary/10">
-          <AvatarImage src={''} /> {/* Add user.image if available */}
-          <AvatarFallback className="text-2xl bg-blue-100 text-blue-700">
-            {user.firstName ? user.firstName[0] : 'U'}
-          </AvatarFallback>
-        </Avatar>
-        <div className="text-center md:text-left space-y-2">
-          <h1 className="text-3xl font-bold">{user.firstName} {user.lastName}</h1>
-          <div className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground">
-             <GraduationCap className="h-4 w-4" />
-             <span className="capitalize">{user.batchYear ? `Batch of ${user.batchYear}` : 'Community Member'}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Contact */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <User className="h-5 w-5" /> Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Mail className="h-4 w-4 text-blue-500" />
-              <span className="text-sm">{user.email}</span>
+      <Card className="w-full shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 pb-8 pt-8">
+            <div className="flex flex-col items-center">
+                <Avatar className="h-32 w-32 border-4 border-white shadow-sm mb-4">
+                    <AvatarImage src="" />
+                    <AvatarFallback className="text-4xl bg-slate-800 text-white">
+                        {user.firstName?.[0]}
+                    </AvatarFallback>
+                </Avatar>
+                
+                <h1 className="text-3xl font-bold text-gray-900">{user.firstName} {user.lastName}</h1>
+                
+                {/* DYNAMIC BADGES */}
+                <div className="flex gap-2 mt-2">
+                    {isAdmin && <Badge className="bg-slate-800"><ShieldCheck className="w-3 h-3 mr-1"/> Administrator</Badge>}
+                    {isMentor && <Badge className="bg-purple-600"><UserCheck className="w-3 h-3 mr-1"/> Mentor</Badge>}
+                    {isScholar && <Badge className="bg-blue-600"><GraduationCap className="w-3 h-3 mr-1"/> Scholar</Badge>}
+                </div>
             </div>
-            {user.phoneNumber && (
-              <div className="flex items-center gap-3">
-                <Phone className="h-4 w-4 text-green-500" />
-                <span className="text-sm">{user.phoneNumber}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <span className="text-sm">Joined {joinedDate}</span>
+        </CardHeader>
+        
+        <CardContent className="p-8 space-y-6">
+            {/* EMAIL SECTION (Visible to logged in users) */}
+            <div className="flex items-center gap-3 text-gray-700">
+                <div className="p-2 bg-slate-100 rounded-full"><Mail className="w-5 h-5"/></div>
+                <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{user.email}</p>
+                </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Bio */}
-        <Card>
-           <CardHeader>
-            <CardTitle className="text-lg">About</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {user.bio ? (
-              <p className="text-gray-600 leading-relaxed">{user.bio}</p>
-            ) : (
-              <p className="text-muted-foreground italic">No bio provided.</p>
+            {/* PHONE SECTION (Respects Privacy) */}
+            {showPhone && (
+                <div className="flex items-center gap-3 text-gray-700">
+                    <div className="p-2 bg-slate-100 rounded-full"><Phone className="w-5 h-5"/></div>
+                    <div>
+                        <p className="text-sm text-muted-foreground">Phone</p>
+                        <p className="font-medium">{user.phoneNumber}</p>
+                    </div>
+                </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
+
+            {/* SCHOLAR SPECIFIC INFO */}
+            {isScholar && user.batchYear && (
+                <div className="flex items-center gap-3 text-gray-700">
+                    <div className="p-2 bg-slate-100 rounded-full"><Calendar className="w-5 h-5"/></div>
+                    <div>
+                        <p className="text-sm text-muted-foreground">Class Of</p>
+                        <p className="font-medium">{user.batchYear}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* BIO SECTION */}
+            {user.bio && (
+                <div className="pt-4 border-t">
+                    <h3 className="font-semibold mb-2">About</h3>
+                    <p className="text-gray-600 leading-relaxed">{user.bio}</p>
+                </div>
+            )}
+            
+            {!user.bio && !isScholar && isAdmin && (
+                <p className="text-center text-muted-foreground italic pt-4">
+                    Staff member of the LIT Portal.
+                </p>
+            )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,26 +1,27 @@
 // File Path: components/ui/LogoutButton.tsx
 
-'use client'; // This remains a Client Component because it uses an onClick handler.
+'use client'; 
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'next-auth/react';
 import { LogOut } from 'lucide-react';
 
-// 1. Define the type for the props our component will accept.
-// The '?' makes the 'isMobile' prop optional.
 type LogoutButtonProps = {
   isMobile?: boolean;
 };
 
-// 2. Update the function to accept the props.
 export default function LogoutButton({ isMobile }: LogoutButtonProps) {
   
-  const handleLogout = () => {
-    signOut({ callbackUrl: '/' });
+  const handleLogout = async () => {
+    // 1. SIGNAL OTHER TABS
+    // We set a value in localStorage. Other tabs listening for this key will know to logout.
+    localStorage.setItem("logout-event", Date.now().toString());
+
+    // 2. ACTUAL LOGOUT
+    await signOut({ callbackUrl: '/' });
   };
 
-  // 3. Conditionally render a different button style if 'isMobile' is true.
   if (isMobile) {
     return (
         <Button onClick={handleLogout} variant="outline" className="w-full justify-start text-lg">

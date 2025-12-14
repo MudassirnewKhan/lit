@@ -1,9 +1,8 @@
 import React from 'react';
-import Link from 'next/link'; // Import Link component
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Newspaper, Users, Facebook, Award } from 'lucide-react';
+import DonateModal from '@/components/DonateModal'; // <--- 1. IMPORT MODAL
 
 export default function ApplySidebar() {
   return (
@@ -15,10 +14,12 @@ export default function ApplySidebar() {
         </CardHeader>
         <CardContent className="flex flex-col space-y-4">
           <p className="text-sm text-muted-foreground">Pledge your support to LIT by sponsoring a student or becoming a regular patron.</p>
-          {/* Fixed: Use Link instead of a tag for internal navigation */}
-          <Link href="/donate" className="w-full">
-              <Button className="w-full">Donate Now</Button>
-          </Link>
+          
+          {/* <--- 2. REPLACED LINK WITH DONATE MODAL ---> */}
+          {/* passing isMobile={true} makes the button take the full width (w-full) */}
+          <DonateModal isMobile={true} />
+          {/* ------------------------------------------ */}
+          
         </CardContent>
       </Card>
 

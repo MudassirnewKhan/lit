@@ -21,7 +21,7 @@ async function getMyRole() {
 }
 
 // ----------------------------------------------------------------------
-// 1. Create User (Updated with Batch Logic)
+// 1. Create User
 // ----------------------------------------------------------------------
 export async function createUser(formData: FormData) {
   try {
@@ -33,7 +33,7 @@ export async function createUser(formData: FormData) {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const roleToAssign = formData.get('role') as string; 
-    const batchYear = formData.get('batchYear') as string; // <--- NEW INPUT
+    const batchYear = formData.get('batchYear') as string; 
 
     // Basic Validation
     if (!email || !password || !roleToAssign) return { error: 'Missing required fields.' };
@@ -52,26 +52,32 @@ export async function createUser(formData: FormData) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Transaction
     await prisma.$transaction(async (tx) => {
       const existingUser = await tx.user.findUnique({ where: { email } });
       if (existingUser) throw new Error('User already exists.');
 
-      // Create User with Batch Year
+      // 1. Create User
       const newUser = await tx.user.create({
         data: { 
           email, 
           firstName, 
           lastName, 
           passwordHash: hashedPassword,
-          // Only save batchYear if it's a student, else null
+          // Save batchYear to the User model
           batchYear: roleToAssign === 'awardee' ? batchYear : null 
         },
       });
 
-      // Assign Role
+      // 2. Assign Role
       await tx.userRoleAssignment.create({
         data: { userId: newUser.id, role: roleToAssign as any },
       });
+
+      // -------------------------------------------------------
+      // ❌ REMOVED: Auto-Sync to Alumni History Table
+      // We deleted the 'tx.alumni.create' block here.
+      // -------------------------------------------------------
     });
 
     // Send Email
@@ -84,6 +90,7 @@ export async function createUser(formData: FormData) {
 
     revalidatePath('/admin/users');
     return { success: true, message: 'User created successfully.' };
+
   } catch (error: any) {
     console.error("Create User Error:", error);
     return { error: error.message || 'Failed.' };
@@ -115,8 +122,9 @@ export async function deleteUser(targetUserId: string) {
     }
 
     await prisma.user.delete({ where: { id: targetUserId } });
+    
     revalidatePath('/admin/users');
-    return { success: true, message: 'User deleted.' };
+    return { success: true, message: 'User account deleted.' };
   } catch (error) {
     return { error: 'Failed to delete user.' };
   }
