@@ -59,7 +59,9 @@ export default function LoadMorePosts({ initialPosts, currentUserId, isAdmin }: 
       })
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Pagination Loader

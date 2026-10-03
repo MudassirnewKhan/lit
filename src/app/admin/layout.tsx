@@ -8,6 +8,7 @@ import {
   MessageSquare, 
   Shield,
   // 1. NEW IMPORTS
+  KeyRound,
   GraduationCap, 
   Library,
   ScrollText // Using this for Policies to differentiate from the Shield logo
@@ -22,7 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   // 1. Security Check
   if (!session?.user) {
-    redirect('/login/subadmin');
+    redirect('/'); // (was /login/subadmin, a page that doesn't exist)
   }
 
   const roles = session.user.roles || [];
@@ -56,6 +57,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       href: '/feed', 
       label: 'Community Feed', 
       icon: <MessageSquare className="w-5 h-5" /> 
+    },
+    { 
+      href: '/admin/security/mfa', 
+      label: 'Security (MFA)', 
+      icon: <KeyRound className="w-5 h-5" /> 
     },
   ];
 

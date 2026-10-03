@@ -2,7 +2,8 @@
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -43,6 +44,11 @@ model User {
   lastLogin     DateTime? @map("last_login")
   mfaSecret     String?   @unique @map("mfa_secret")
   mfaEnabled    Boolean   @default(false) @map("mfa_enabled")
+
+  // --- LOGIN HARDENING ---
+  mustChangePassword Boolean   @default(false) @map("must_change_password") // true for temp/admin-set passwords
+  failedLoginCount   Int       @default(0)     @map("failed_login_count")   // wrong attempts since last success/lock
+  lockedUntil        DateTime?                 @map("locked_until")         // login blocked until this time
 
 
   // Relations
@@ -118,6 +124,8 @@ model Application {
   status        ApplicationStatus @default(pending)
   submittedAt   DateTime          @default(now()) @map("submitted_at")
   batchYear     String            // e.g. "2025"
+  major         String?
+  gpa           Float?
 
   @@map("applications")
 }

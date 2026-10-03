@@ -45,9 +45,8 @@ export async function submitApplication(formData: unknown) {
         // SAVE BATCH YEAR
         batchYear: data.batchYear, 
         essay: data.essay,
-        // Note: 'major' and 'gpa' are validated but not saved because 
-        // they aren't in your Schema.prisma Application model.
-        // If you want to save them, add them to schema.prisma first!
+        major: data.major,
+        gpa: parseFloat(data.gpa),
       },
     });
 

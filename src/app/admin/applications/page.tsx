@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireStaff } from '@/lib/authz';
 import { redirect } from 'next/navigation';
 // IMPORTANT: This imports the client component we just made
 import ApplicationsClientPage from './ApplicationsClientPage'; 
@@ -8,9 +7,10 @@ import ApplicationsClientPage from './ApplicationsClientPage';
 export const dynamic = 'force-dynamic';
 
 export default async function Page() {
-  // 1. Security Check
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.roles?.includes('admin')) {
+  // 1. Security Check (same rule as the approve/reject actions: admin + subadmin)
+  try {
+    await requireStaff(['admin', 'subadmin']);
+  } catch {
     redirect('/');
   }
 

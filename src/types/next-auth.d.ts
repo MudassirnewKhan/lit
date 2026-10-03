@@ -11,6 +11,7 @@ declare module 'next-auth/jwt' {
     id: string;
     // Add batchYear to token
     batchYear?: string | null;
+    mustChangePassword?: boolean;
   }
 }
 
@@ -22,6 +23,7 @@ declare module 'next-auth' {
       id: string;
       // Add batchYear to session.user
       batchYear?: string | null;
+      mustChangePassword?: boolean;
     } & DefaultSession['user'];
   }
 
@@ -29,5 +31,6 @@ declare module 'next-auth' {
   interface User extends DefaultUser {
     roles: string[];
     batchYear?: string | null;
+    mustChangePassword?: boolean;
   }
 }

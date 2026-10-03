@@ -14,6 +14,8 @@ import { Loader2 } from 'lucide-react';
 export default function AdminLoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [needMfa, setNeedMfa] = useState(false);
   const [error, setError] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
   const router = useRouter();
@@ -29,10 +31,16 @@ export default function AdminLoginForm() {
         redirect: false,
         email: email,
         password: password,
+        mfaCode: mfaCode,
       });
 
-      if (result?.error) {
-        setError('Invalid credentials. Please try again.');
+      if (result?.error === 'MFA_REQUIRED') {
+        // Password was right; the account has MFA, so ask for the 6-digit code.
+        setNeedMfa(true);
+        setError('Enter the 6-digit code from your authenticator app.');
+        setStatus('idle');
+      } else if (result?.error) {
+        setError('Invalid credentials or code, or the account is temporarily locked. Please try again.');
         setStatus('idle');
       } else if (result?.ok) {
         // --- THIS IS THE FINAL FIX ---
@@ -68,6 +76,20 @@ export default function AdminLoginForm() {
             <Label htmlFor="password">Password</Label>
             <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
+          {needMfa && (
+            <div className="space-y-2">
+              <Label htmlFor="mfaCode">Authenticator code</Label>
+              <Input
+                id="mfaCode"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                required
+              />
+            </div>
+          )}
           {error && <p className="text-sm text-red-500 text-center">{error}</p>}
           <Button type="submit" className="w-full" disabled={status === 'loading'}>
             {status === 'loading' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</> : 'Sign In'}

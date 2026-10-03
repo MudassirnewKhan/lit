@@ -46,7 +46,6 @@ export default function PostCard({ post, currentUserId, isAdmin, onDelete }: Pos
           if (payload.eventType === 'INSERT') {
             const newComment = await fetchComment(payload.new.id);
             if (newComment) {
-              // @ts-expect-error backend matches type
               setComments((prev) =>
                 prev.some((c) => c.id === newComment.id) ? prev : [...prev, newComment]
               );
@@ -88,7 +87,6 @@ export default function PostCard({ post, currentUserId, isAdmin, onDelete }: Pos
     if (result.success && result.comment) {
       commentFormRef.current?.reset();
 
-      // @ts-expect-error backend matches type
       setComments((prev) => [...prev, result.comment]);
 
       if (!showComments) setShowComments(true);

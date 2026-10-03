@@ -15,6 +15,10 @@ type Application = {
   email: string;
   submittedAt: string | Date;
   status: string;
+  batchYear?: string | null;
+  major?: string | null;
+  gpa?: number | null;
+  essay?: string | null;
 };
 
 export default function ApplicationsClientPage({ initialApplications }: { initialApplications: Application[] }) {
@@ -59,6 +63,10 @@ export default function ApplicationsClientPage({ initialApplications }: { initia
             <TableRow>
               <TableHead>Applicant Name</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Batch</TableHead>
+              <TableHead>Major</TableHead>
+              <TableHead>GPA</TableHead>
+              <TableHead>Essay</TableHead>
               <TableHead>Submitted At</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -69,6 +77,17 @@ export default function ApplicationsClientPage({ initialApplications }: { initia
                 <TableRow key={app.id}>
                   <TableCell className="font-medium">{app.fullName}</TableCell>
                   <TableCell>{app.email}</TableCell>
+                  <TableCell>{app.batchYear ?? '-'}</TableCell>
+                  <TableCell>{app.major ?? '-'}</TableCell>
+                  <TableCell>{app.gpa ?? '-'}</TableCell>
+                  <TableCell className="max-w-xs">
+                    {app.essay ? (
+                      <details>
+                        <summary className="cursor-pointer text-primary text-sm">Read</summary>
+                        <p className="mt-2 whitespace-pre-wrap text-sm">{app.essay}</p>
+                      </details>
+                    ) : '-'}
+                  </TableCell>
                   <TableCell>
                     {new Date(app.submittedAt).toLocaleDateString()}
                   </TableCell>
@@ -94,7 +113,7 @@ export default function ApplicationsClientPage({ initialApplications }: { initia
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   No pending applications found.
                 </TableCell>
               </TableRow>

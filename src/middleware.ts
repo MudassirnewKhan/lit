@@ -5,8 +5,8 @@ import { getToken } from 'next-auth/jwt';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Ignore API and Next.js internal files
-  if (pathname.startsWith('/api') || pathname.startsWith('/_next')) {
+  // Ignore API, Next.js internals and static files (anything with a file extension)
+  if (pathname.startsWith('/api') || pathname.startsWith('/_next') || pathname.includes('.')) {
     return NextResponse.next();
   }
 
@@ -14,6 +14,15 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request, secret: secret });
   
   const adminLoginPath = `/${process.env.ADMIN_LOGIN_PATH}`;
+
+  // --- 0. Forced password change ---
+  // Accounts created with a temporary/admin-set password can only see /change-password.
+  if (token?.mustChangePassword && !pathname.startsWith('/change-password')) {
+    return NextResponse.redirect(new URL('/change-password', request.url));
+  }
+  if (pathname.startsWith('/change-password') && !token) {
+    return NextResponse.redirect(new URL('/login/awardee', request.url));
+  }
 
   // --- 1. Protect User Routes ---
   // Added '/network' to this list so it requires login

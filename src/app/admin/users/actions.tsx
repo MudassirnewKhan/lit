@@ -1,8 +1,8 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireStaff } from '@/lib/authz';
+import { validateNewPassword } from '@/lib/security';
 import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcrypt';
 import { Resend } from 'resend';
@@ -11,13 +11,10 @@ import WelcomeEmail from '@/components/emails/WelcomeEmail';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Helper: Get Role ('admin', 'subadmin', or null)
+// Helper: who is calling? (checks the DATABASE, throws 'Unauthorized' if not staff)
 async function getMyRole() {
-  const session = await getServerSession(authOptions);
-  const roles = session?.user?.roles || [];
-  if (roles.includes('admin')) return 'admin';
-  if (roles.includes('subadmin')) return 'subadmin';
-  throw new Error('Unauthorized');
+  const { role } = await requireStaff();
+  return role;
 }
 
 // ----------------------------------------------------------------------
@@ -37,6 +34,9 @@ export async function createUser(formData: FormData) {
 
     // Basic Validation
     if (!email || !password || !roleToAssign) return { error: 'Missing required fields.' };
+
+    const passwordProblem = validateNewPassword(password);
+    if (passwordProblem) return { error: passwordProblem };
 
     // --- RULE 1: Sub-admins cannot create Staff ---
     if (myRole === 'subadmin') {
@@ -64,6 +64,7 @@ export async function createUser(formData: FormData) {
           firstName, 
           lastName, 
           passwordHash: hashedPassword,
+          mustChangePassword: true, // admin-chosen password: user must replace it at first login
           // Save batchYear to the User model
           batchYear: roleToAssign === 'awardee' ? batchYear : null 
         },
@@ -80,15 +81,20 @@ export async function createUser(formData: FormData) {
       // -------------------------------------------------------
     });
 
-    // Send Email
-    await resend.emails.send({
-      from: 'LIT Portal Admin <onboarding@resend.dev>',
-      to: email,
-      subject: `Your LIT Account Created`,
-      react: <WelcomeEmail applicantName={firstName} applicantEmail={email} tempPassword={password} />,
-    });
-
+    // Send Email (the user already exists at this point, so an email failure is a warning, not a failure)
     revalidatePath('/admin/users');
+    try {
+      await resend.emails.send({
+        from: 'LIT Portal Admin <onboarding@resend.dev>',
+        to: email,
+        subject: `Your LIT Account Created`,
+        react: <WelcomeEmail applicantName={firstName} applicantEmail={email} tempPassword={password} />,
+      });
+    } catch (emailError) {
+      console.error('Welcome email failed:', emailError);
+      return { success: true, message: 'User created, but the welcome email could not be sent. Share the password with them directly.' };
+    }
+
     return { success: true, message: 'User created successfully.' };
 
   } catch (error: any) {
@@ -102,10 +108,9 @@ export async function createUser(formData: FormData) {
 // ----------------------------------------------------------------------
 export async function deleteUser(targetUserId: string) {
   try {
-    const myRole = await getMyRole();
-    const session = await getServerSession(authOptions);
+    const { userId: myUserId, role: myRole } = await requireStaff();
 
-    if (targetUserId === session?.user.id) return { error: "Cannot delete yourself." };
+    if (targetUserId === myUserId) return { error: "Cannot delete yourself." };
 
     // Fetch Target to check THEIR role
     const targetUser = await prisma.user.findUnique({
@@ -139,12 +144,16 @@ export async function resetUserPassword(formData: FormData) {
     const userId = formData.get('userId') as string;
     const newPassword = formData.get('newPassword') as string;
 
+    const passwordProblem = validateNewPassword(newPassword || '');
+    if (passwordProblem) return { error: passwordProblem };
+
     const targetUser = await prisma.user.findUnique({
         where: { id: userId },
         include: { roles: true }
     });
+    if (!targetUser) return { error: 'User not found.' };
 
-    const isTargetStaff = targetUser?.roles.some(r => ['admin', 'subadmin'].includes(r.role));
+    const isTargetStaff = targetUser.roles.some(r => ['admin', 'subadmin'].includes(r.role));
 
     // --- RULE 3: Sub-admins cannot change Staff passwords ---
     if (myRole === 'subadmin' && isTargetStaff) {
@@ -154,7 +163,12 @@ export async function resetUserPassword(formData: FormData) {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await prisma.user.update({
       where: { id: userId },
-      data: { passwordHash: hashedPassword }
+      data: {
+        passwordHash: hashedPassword,
+        mustChangePassword: true, // they must pick their own password after this reset
+        failedLoginCount: 0,      // a reset also unlocks a locked account
+        lockedUntil: null,
+      }
     });
 
     revalidatePath('/admin/users');

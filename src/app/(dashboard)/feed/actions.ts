@@ -102,6 +102,7 @@ export async function fetchPosts(page: number = 1, limit: number = 10) {
   return posts.map(post => ({
     ...post,
     author: {
+      id: post.authorId,
       name: `${post.author.firstName || ''} ${post.author.lastName || ''}`.trim() || 'Unknown User',
       roles: post.author.roles.map(r => r.role),
     },
@@ -111,6 +112,7 @@ export async function fetchPosts(page: number = 1, limit: number = 10) {
       createdAt: c.createdAt,
       authorId: c.authorId,
       author: {
+        id: c.authorId,
         name: `${c.author.firstName || ''} ${c.author.lastName || ''}`.trim() || 'Unknown User',
         roles: c.author.roles.map(r => r.role),
       }
@@ -165,6 +167,7 @@ export async function createComment(postId: string, formData: FormData) {
       createdAt: newComment.createdAt,
       authorId: newComment.authorId,
       author: {
+        id: newComment.authorId,
         name: `${newComment.author.firstName || ''} ${newComment.author.lastName || ''}`.trim() || 'Unknown User',
         roles: newComment.author.roles.map(r => r.role),
       }
@@ -211,6 +214,7 @@ export async function fetchComment(commentId: string) {
     createdAt: comment.createdAt,
     authorId: comment.authorId,
     author: {
+        id: comment.authorId,
         name: `${comment.author.firstName || ''} ${comment.author.lastName || ''}`.trim() || 'Unknown User',
         roles: comment.author.roles.map(r => r.role),
     }
@@ -239,6 +243,7 @@ export async function fetchPost(postId: string) {
   return {
     ...post,
     author: {
+      id: post.authorId,
       name: `${post.author.firstName || ''} ${post.author.lastName || ''}`.trim() || 'Unknown User',
       roles: post.author.roles.map(r => r.role),
     },
@@ -248,6 +253,7 @@ export async function fetchPost(postId: string) {
       createdAt: c.createdAt,
       authorId: c.authorId,
       author: {
+        id: c.authorId,
         name: `${c.author.firstName || ''} ${c.author.lastName || ''}`.trim() || 'Unknown User',
         roles: c.author.roles.map(r => r.role),
       }

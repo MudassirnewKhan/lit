@@ -1,44 +1,40 @@
-// File Path: app/api/admin/mfa-setup/route.ts
+// File Path: src/app/api/admin/mfa-setup/route.ts
+// Step 1 of MFA setup: create a secret + QR code for the CURRENTLY LOGGED-IN staff member.
+// The secret is saved but MFA stays OFF until they prove it works via /api/admin/mfa-verify.
 
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { authenticator } from 'otplib';
 import qrcode from 'qrcode';
-// You'll need to get the user's ID from their session
-import { getServerSession } from 'next-auth';
-// (Assuming you have your NextAuth options in a separate file)
+import { prisma } from '@/lib/prisma'; // shared client (was: new PrismaClient())
+import { requireStaff } from '@/lib/authz';
 
-const prisma = new PrismaClient();
-
-export async function GET(request: Request) {
-  // In a real app, you MUST protect this route and get the user's ID from their session
-  // const session = await getServerSession(authOptions);
-  // if (!session || !session.user) {
-  //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  // }
-  // const userId = session.user.id;
-
-  // For demonstration, we'll use a placeholder ID
-  const userId = 'your_logged_in_admin_id'; // Replace with real session logic
+// POST, not GET: this changes data, and GET requests can be triggered by links/images.
+export async function POST() {
+  let userId: string;
+  try {
+    ({ userId } = await requireStaff());
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
-  // Generate a new MFA secret
-  const secret = authenticator.generateSecret();
-  const appName = 'LIT Scholarship Portal';
-  const otpauth = authenticator.keyuri(user.email, appName, secret);
+  // Don't let a stolen session silently swap the authenticator on an account that already has MFA.
+  if (user.mfaEnabled) {
+    return NextResponse.json({ error: 'MFA is already enabled for this account.' }, { status: 409 });
+  }
 
-  // Save the temporary secret to the user's record
+  const secret = authenticator.generateSecret();
+  const otpauth = authenticator.keyuri(user.email, 'LIT Scholarship Portal', secret);
+
   await prisma.user.update({
     where: { id: userId },
-    data: { mfaSecret: secret }, // Temporarily store the secret
+    data: { mfaSecret: secret }, // pending: mfaEnabled stays false
   });
 
-  // Generate a QR code image from the secret
   const qrCodeDataUrl = await qrcode.toDataURL(otpauth);
-
-  return NextResponse.json({ qrCodeDataUrl });
+  return NextResponse.json({ qrCodeDataUrl, manualKey: secret });
 }
