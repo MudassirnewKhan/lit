@@ -20,6 +20,7 @@ export async function updateProfile(formData: FormData) {
   const phoneNumber = formData.get('phoneNumber') as string;
   const department = formData.get('department') as string;
   const batchYear = formData.get('batchYear') as string;
+  const meetingLink = formData.get('meetingLink') as string;
   
   // We use 'newPassword' to avoid browser autofill conflicts
   const newPassword = formData.get('newPassword') as string;
@@ -39,6 +40,7 @@ export async function updateProfile(formData: FormData) {
     phoneNumber: string;
     department?: string | null;
     batchYear?: string | null;
+    meetingLink?: string | null;
     passwordHash?: string;
   } = {
     firstName,
@@ -47,6 +49,7 @@ export async function updateProfile(formData: FormData) {
     phoneNumber,
     department: department ? department.trim() : null,
     batchYear: batchYear ? batchYear.trim() : null,
+    meetingLink: meetingLink ? meetingLink.trim() : null,
   };
 
   // Password Update Logic

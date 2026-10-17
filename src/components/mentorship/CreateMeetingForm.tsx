@@ -12,15 +12,30 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, Sparkles, Video } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function CreateMeetingForm() {
+export default function CreateMeetingForm({ defaultMeetingLink = '' }: { defaultMeetingLink?: string }) {
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [deptOption, setDeptOption] = useState('all');
   const [customDept, setCustomDept] = useState('');
+  const [meetingLink, setMeetingLink] = useState(defaultMeetingLink || '');
   const formRef = useRef<HTMLFormElement>(null);
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen && !meetingLink && defaultMeetingLink) {
+      setMeetingLink(defaultMeetingLink);
+    }
+  };
+
+  const handleAutoGenerate = () => {
+    const code = Math.random().toString(36).substring(2, 8);
+    const autoUrl = `https://meet.jit.si/LIT-Mentorship-${code}`;
+    setMeetingLink(autoUrl);
+    toast.success("Auto-generated instant meeting room!");
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,6 +46,14 @@ export default function CreateMeetingForm() {
     // Resolve targetDepartment: custom text if selected, else the dropdown value
     const finalDept = deptOption === 'custom' ? customDept.trim() : deptOption;
     formData.set('targetDepartment', finalDept);
+    
+    // Ensure meeting link is set (even if user cleared it, fall back to default or auto-generate)
+    if (!meetingLink.trim()) {
+      const code = Math.random().toString(36).substring(2, 8);
+      formData.set('link', defaultMeetingLink || `https://meet.jit.si/LIT-Mentorship-${code}`);
+    } else {
+      formData.set('link', meetingLink.trim());
+    }
 
     const result = await createMeeting(formData);
 
@@ -42,13 +65,14 @@ export default function CreateMeetingForm() {
       formRef.current?.reset();
       setDeptOption('all');
       setCustomDept('');
+      setMeetingLink(defaultMeetingLink || '');
     }
 
     setIsPending(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="bg-purple-600 hover:bg-purple-700 text-white">
           <Plus className="mr-2 h-4 w-4" /> Schedule Session
@@ -67,8 +91,29 @@ export default function CreateMeetingForm() {
               <Input id="title" name="title" placeholder="e.g. GRE Prep & SOP Review" required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="link">Meeting Link</Label>
-              <Input id="link" name="link" placeholder="Google Meet / Zoom URL" required />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="link">Meeting Link</Label>
+                <button
+                  type="button"
+                  onClick={handleAutoGenerate}
+                  className="text-xs text-purple-600 hover:text-purple-800 font-medium flex items-center gap-1 hover:underline cursor-pointer"
+                  title="Generate a 1-click video conference room"
+                >
+                  <Sparkles className="h-3 w-3" /> Auto-generate
+                </button>
+              </div>
+              <Input 
+                id="link" 
+                name="link" 
+                value={meetingLink}
+                onChange={(e) => setMeetingLink(e.target.value)}
+                placeholder="Google Meet, Zoom, or Auto-generated" 
+              />
+              {defaultMeetingLink && meetingLink === defaultMeetingLink && (
+                <p className="text-[11px] text-green-700 font-medium flex items-center gap-1">
+                  ✓ Pre-filled with your saved meeting link
+                </p>
+              )}
             </div>
           </div>
 

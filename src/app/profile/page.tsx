@@ -25,6 +25,7 @@ export default async function ProfilePage() {
       phoneNumber: true,
       department: true,
       batchYear: true,
+      meetingLink: true,
     },
   });
 

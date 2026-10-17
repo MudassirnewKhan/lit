@@ -60,6 +60,7 @@ model User {
   resources     Resource[] // <--- Add this relation
   batchYear     String?   // e.g., "2024", "2025". Only relevant for Students.
   department    String?   // Department / Major (e.g. "Computer Science", "Electrical Engineering")
+  meetingLink   String?   // Default Google Meet / Zoom link for mentors/staff
 }
 model SuccessStory {
   id          String   @id @default(cuid())

@@ -8,12 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail, Phone, Calendar, ShieldCheck, GraduationCap, UserCheck } from 'lucide-react';
 
-export default async function PublicProfilePage({ params }: { params: { id: string } }) {
+export default async function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   
   // 1. Fetch User with Roles
   const user = await prisma.user.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { roles: true }
   });
 

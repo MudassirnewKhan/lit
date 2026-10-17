@@ -35,15 +35,28 @@ export async function createMeeting(formData: FormData) {
 
     // Extract Data from FormData
     const title = formData.get('title') as string;
-    const link = formData.get('link') as string;
     const dateString = formData.get('date') as string;
     const targetBatch = formData.get('targetBatch') as string;
     const targetDepartment = formData.get('targetDepartment') as string;
     const description = (formData.get('description') as string) || '';
 
+    let finalLink = (formData.get('link') as string)?.trim();
+    if (!finalLink) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { meetingLink: true },
+      });
+      if (dbUser?.meetingLink?.trim()) {
+        finalLink = dbUser.meetingLink.trim();
+      } else {
+        const roomCode = Math.random().toString(36).substring(2, 8);
+        finalLink = `https://meet.jit.si/LIT-Mentorship-${roomCode}`;
+      }
+    }
+
     // Validate
-    if (!title || !link || !dateString) {
-      return { error: "Missing required fields (Title, Link, or Date)." };
+    if (!title || !dateString) {
+      return { error: "Missing required fields (Title or Date)." };
     }
 
     // Convert string date to Date object
@@ -57,7 +70,7 @@ export async function createMeeting(formData: FormData) {
         title,
         description: description || null,
         scheduledAt,
-        link,
+        link: finalLink,
         mentorId: user.id,
         targetBatch: normalizedBatch,
         targetDepartment: normalizedDept,
@@ -92,7 +105,7 @@ export async function createMeeting(formData: FormData) {
         const emailHtml = renderSessionInviteEmailHtml({
           title,
           description: description || null,
-          link,
+          link: finalLink,
           scheduledAt,
           mentorName: hostName,
           targetBatch: normalizedBatch,

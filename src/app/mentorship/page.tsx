@@ -4,6 +4,7 @@ import DeleteMeetingButton from '@/components/mentorship/DeleteMeetingButton'; /
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Calendar, Clock, Video, User } from 'lucide-react';
 import { getCurrentUser } from '@/lib/session';
+import { prisma } from '@/lib/prisma';
 
 export default async function MentorshipPage() {
   const user = await getCurrentUser();
@@ -15,6 +16,16 @@ export default async function MentorshipPage() {
   const isStaff = user.roles.some(r => ['admin', 'subadmin', 'mentor', 'sponsor'].includes(r));
   const isAdmin = user.roles.some(r => ['admin', 'subadmin'].includes(r));
 
+  // Fetch mentor's default meeting link if available
+  let defaultMeetingLink = '';
+  if (user?.id) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { meetingLink: true },
+    });
+    defaultMeetingLink = dbUser?.meetingLink || '';
+  }
+
   return (
     <div className="space-y-8 p-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -24,7 +35,7 @@ export default async function MentorshipPage() {
         </div>
         
         {/* Only Mentors/Admins can schedule */}
-        {isStaff && <CreateMeetingForm />}
+        {isStaff && <CreateMeetingForm defaultMeetingLink={defaultMeetingLink} />}
       </div>
 
       <div className="space-y-4">

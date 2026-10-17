@@ -17,6 +17,7 @@ type UserData = {
   phoneNumber: string | null;
   department?: string | null;
   batchYear?: string | null;
+  meetingLink?: string | null;
 };
 
 export default function ProfileForm({ user }: { user: UserData }) {
@@ -100,6 +101,19 @@ export default function ProfileForm({ user }: { user: UserData }) {
                 <Input id="batchYear" name="batchYear" defaultValue={user.batchYear || ''} placeholder="e.g. 2025" />
                 <p className="text-xs text-muted-foreground">Used for batch-specific workshops and sessions.</p>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="meetingLink">Default Meeting Link (Google Meet / Zoom)</Label>
+              <Input 
+                id="meetingLink" 
+                name="meetingLink" 
+                defaultValue={user.meetingLink || ''} 
+                placeholder="https://meet.google.com/xxx-yyyy-zzz or https://zoom.us/j/..." 
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional: Auto-fills when scheduling mentorship sessions so you don't have to re-enter it.
+              </p>
             </div>
 
             <div className="space-y-2">
