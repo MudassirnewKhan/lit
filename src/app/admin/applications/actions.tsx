@@ -5,20 +5,28 @@ import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcrypt'; 
 import { requireStaff } from '@/lib/authz';
 import { generateTempPassword } from '@/lib/security';
-import React from 'react'; 
-import { render } from '@react-email/render'; 
-import WelcomeEmail from '@/components/emails/WelcomeEmail';
+import { renderWelcomeEmailHtml } from '@/components/emails/WelcomeEmail';
 import nodemailer from 'nodemailer';
 
-// 1. Configure Gmail Transporter
-// (needs GMAIL_USER and GMAIL_PASS to be set in Vercel -> Environment Variables)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER, // Your email
-    pass: process.env.GMAIL_PASS, // Your App Password
-  },
-});
+// Helper to configure and retrieve Gmail Transporter dynamically at request time
+function getGmailTransporter() {
+  const user = process.env.GMAIL_USER?.replace(/^["']|["']$/g, '').trim();
+  const pass = process.env.GMAIL_PASS?.replace(/^["']|["']$/g, '').trim();
+
+  if (!user || !pass) {
+    throw new Error(
+      `Gmail credentials not configured: GMAIL_USER=${user ? 'set' : 'missing'}, GMAIL_PASS=${pass ? 'set' : 'missing'}`
+    );
+  }
+
+  return {
+    transporter: nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user, pass },
+    }),
+    senderEmail: user,
+  };
+}
 
 // WHO CAN REVIEW APPLICATIONS?
 // Decision: admin AND subadmin (the sidebar already shows "Applications" to both).
@@ -95,27 +103,29 @@ export async function approveApplication(applicationId: string) {
     // The database part is DONE and committed. Email is a separate step: if it fails we
     // must NOT report the whole approval as failed.
     let emailSent = true;
+    let emailErrorDetail = '';
     try {
       const passwordEmailText = isNewUser 
           ? tempPassword 
           : "(Use your existing password)";
 
-      const emailHtml = await render(
-        <WelcomeEmail
-          applicantName={application.fullName}
-          applicantEmail={application.email}
-          tempPassword={passwordEmailText}
-        />
-      );
+      const emailHtml = renderWelcomeEmailHtml({
+        applicantName: application.fullName,
+        applicantEmail: application.email,
+        tempPassword: passwordEmailText,
+      });
+
+      const { transporter, senderEmail } = getGmailTransporter();
 
       await transporter.sendMail({
-        from: `"LIT Scholarship Admin" <${process.env.GMAIL_USER}>`,
+        from: `"LIT Scholarship Admin" <${senderEmail}>`,
         to: application.email,
         subject: '🎉 Your LIT Scholarship Application has been Approved!',
         html: emailHtml,
       });
-    } catch (emailError) {
+    } catch (emailError: unknown) {
       emailSent = false;
+      emailErrorDetail = emailError instanceof Error ? emailError.message : String(emailError);
       console.error("Approval email failed:", emailError);
     }
 
@@ -126,8 +136,8 @@ export async function approveApplication(applicationId: string) {
         success: true,
         emailSent: false,
         message: isNewUser
-          ? `${application.fullName} was approved, but the email could not be sent. Go to Manage Users and use "Reset Password" to give them new login details.`
-          : `${application.fullName} was approved, but the notification email could not be sent.`,
+          ? `${application.fullName} was approved, but the email could not be sent (${emailErrorDetail}). Go to Manage Users and use "Reset Password" to give them new login details.`
+          : `${application.fullName} was approved, but the notification email could not be sent (${emailErrorDetail}).`,
       };
     }
 
