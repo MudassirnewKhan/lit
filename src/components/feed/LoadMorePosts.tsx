@@ -66,11 +66,10 @@ export default function LoadMorePosts({ initialPosts, currentUserId, isAdmin }: 
 
   // Pagination Loader
   const loadMore = useCallback(async () => {
-    const nextPosts = await fetchPosts(page);
+    const nextPosts = (await fetchPosts(page)) as unknown as PostWithAuthor[];
     if (!nextPosts.length) {
       setHasMore(false);
     } else {
-      // @ts-expect-error backend returns correct structure
       setPosts((prev) => [...prev, ...nextPosts]);
       setPage((prev) => prev + 1);
     }
@@ -90,6 +89,18 @@ export default function LoadMorePosts({ initialPosts, currentUserId, isAdmin }: 
 
   return (
     <>
+      {posts.length === 0 && (
+        <div className="bg-white rounded-xl border border-dashed border-gray-200 p-10 text-center shadow-sm">
+          <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-3">
+            <Loader2 className="w-6 h-6 text-purple-500 animate-pulse" />
+          </div>
+          <h3 className="font-semibold text-gray-900 mb-1 text-base">No community posts yet</h3>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+            Be the first to share an update, ask a question, or introduce yourself to fellow scholars and mentors!
+          </p>
+        </div>
+      )}
+
       {posts.map((post) => (
         <PostCard
           key={post.id}
@@ -107,8 +118,8 @@ export default function LoadMorePosts({ initialPosts, currentUserId, isAdmin }: 
       )}
 
       {!hasMore && posts.length > 0 && (
-        <p className="text-center text-sm text-muted-foreground py-4">
-          You&apos;ve reached the end of the feed.
+        <p className="text-center text-xs text-muted-foreground py-4">
+          ✓ You&apos;ve caught up with all community posts.
         </p>
       )}
     </>

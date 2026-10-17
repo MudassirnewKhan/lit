@@ -86,12 +86,12 @@ export async function fetchPosts(page: number = 1, limit: number = 10) {
     orderBy: { createdAt: 'desc' },
     include: {
       author: {
-        select: { firstName: true, lastName: true, roles: { select: { role: true } } },
+        select: { id: true, firstName: true, lastName: true, roles: { select: { role: true } } },
       },
       comments: {
         include: {
           author: {
-            select: { firstName: true, lastName: true, roles: { select: { role: true } } }
+            select: { id: true, firstName: true, lastName: true, roles: { select: { role: true } } }
           }
         },
         orderBy: { createdAt: 'asc' }
@@ -101,8 +101,9 @@ export async function fetchPosts(page: number = 1, limit: number = 10) {
   
   return posts.map(post => ({
     ...post,
+    attachments: (post.attachments as unknown as Attachment[]) || [],
     author: {
-      id: post.authorId,
+      id: post.author.id,
       name: `${post.author.firstName || ''} ${post.author.lastName || ''}`.trim() || 'Unknown User',
       roles: post.author.roles.map(r => r.role),
     },
@@ -112,7 +113,7 @@ export async function fetchPosts(page: number = 1, limit: number = 10) {
       createdAt: c.createdAt,
       authorId: c.authorId,
       author: {
-        id: c.authorId,
+        id: c.author.id,
         name: `${c.author.firstName || ''} ${c.author.lastName || ''}`.trim() || 'Unknown User',
         roles: c.author.roles.map(r => r.role),
       }
