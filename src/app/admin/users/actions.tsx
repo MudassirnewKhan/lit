@@ -28,6 +28,7 @@ export async function createUser(formData: FormData) {
     const password = formData.get('password') as string;
     const roleToAssign = formData.get('role') as string; 
     const batchYear = formData.get('batchYear') as string; 
+    const department = (formData.get('department') as string) || null;
 
     // Basic Validation
     if (!email || !password || !roleToAssign) return { error: 'Missing required fields.' };
@@ -62,8 +63,9 @@ export async function createUser(formData: FormData) {
           lastName, 
           passwordHash: hashedPassword,
           mustChangePassword: true, // admin-chosen password: user must replace it at first login
-          // Save batchYear to the User model
-          batchYear: roleToAssign === 'awardee' ? batchYear : null 
+          // Save batchYear and department to the User model
+          batchYear: roleToAssign === 'awardee' ? batchYear : null,
+          department: department ? department.trim() : null,
         },
       });
 

@@ -23,6 +23,8 @@ export default async function ProfilePage() {
       email: true,
       bio: true,
       phoneNumber: true,
+      department: true,
+      batchYear: true,
     },
   });
 

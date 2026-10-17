@@ -51,19 +51,31 @@ export default async function MentorshipPage() {
                   {/* -------------------------------- */}
 
                   <CardHeader className="pb-2 pr-10"> {/* Added pr-10 to prevent text overlapping button */}
-                    <div className="flex flex-col gap-2 items-start">
+                    <div className="flex flex-col gap-2 items-start w-full">
                       <CardTitle className="text-lg leading-tight">{meeting.title}</CardTitle>
                       
-                      {/* Badge Logic */}
-                      {meeting.targetBatch ? (
-                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                          Class of {meeting.targetBatch}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                          Public
-                        </span>
-                      )}
+                      {/* Target Audience Badges */}
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {meeting.targetBatch ? (
+                          <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                            Class of {meeting.targetBatch}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700">
+                            All Batches
+                          </span>
+                        )}
+
+                        {meeting.targetDepartment ? (
+                          <span className="inline-flex items-center rounded-full bg-purple-50 border border-purple-200 px-2.5 py-0.5 text-xs font-medium text-purple-700">
+                            {meeting.targetDepartment}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-xs font-medium text-green-700">
+                            All Departments
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <CardDescription className="line-clamp-2 mt-2">
                       {meeting.description || "No description provided."}

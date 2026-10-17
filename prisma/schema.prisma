@@ -59,7 +59,7 @@ model User {
   meetings      Meeting[] // <--- Add this relation
   resources     Resource[] // <--- Add this relation
   batchYear     String?   // e.g., "2024", "2025". Only relevant for Students.
-
+  department    String?   // Department / Major (e.g. "Computer Science", "Electrical Engineering")
 }
 model SuccessStory {
   id          String   @id @default(cuid())
@@ -101,7 +101,8 @@ model Meeting {
   link        String   // Zoom/Google Meet URL
   scheduledAt DateTime // When is the meeting?
   createdAt   DateTime @default(now())
-  targetBatch String?
+  targetBatch      String?  // e.g. "2024", "2025", or null for all
+  targetDepartment String?  // e.g. "Computer Science", or null for all
   
   mentorId    String
   mentor      User     @relation(fields: [mentorId], references: [id], onDelete: Cascade)

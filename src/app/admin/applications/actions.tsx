@@ -59,6 +59,15 @@ export async function approveApplication(applicationId: string) {
                 data: { userId: existingUser.id, role: 'awardee' } 
             });
         }
+
+        // Sync batch and department if missing
+        await tx.user.update({
+          where: { id: existingUser.id },
+          data: {
+            batchYear: existingUser.batchYear || application.batchYear,
+            department: existingUser.department || application.major,
+          },
+        });
       } else {
         // --- NEW USER LOGIC ---
         isNewUser = true;
@@ -70,7 +79,8 @@ export async function approveApplication(applicationId: string) {
             lastName: application.fullName.split(' ').slice(1).join(' '),
             passwordHash: hashedPassword,
             mustChangePassword: true, // they must choose their own password at first login
-            batchYear: application.batchYear, // was hardcoded to "2025"
+            batchYear: application.batchYear,
+            department: application.major,
           },
         });
 

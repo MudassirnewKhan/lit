@@ -15,6 +15,8 @@ type UserData = {
   email: string | null;
   bio: string | null;
   phoneNumber: string | null;
+  department?: string | null;
+  batchYear?: string | null;
 };
 
 export default function ProfileForm({ user }: { user: UserData }) {
@@ -85,6 +87,19 @@ export default function ProfileForm({ user }: { user: UserData }) {
             <div className="space-y-2">
               <Label htmlFor="phoneNumber">Phone Number</Label>
               <Input id="phoneNumber" name="phoneNumber" defaultValue={user.phoneNumber || ''} placeholder="+1 (555) 000-0000" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="department">Department / Major</Label>
+                <Input id="department" name="department" defaultValue={user.department || ''} placeholder="e.g. Computer Science, Business" />
+                <p className="text-xs text-muted-foreground">Used to match relevant mentorship sessions.</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="batchYear">Graduation / Batch Year</Label>
+                <Input id="batchYear" name="batchYear" defaultValue={user.batchYear || ''} placeholder="e.g. 2025" />
+                <p className="text-xs text-muted-foreground">Used for batch-specific workshops and sessions.</p>
+              </div>
             </div>
 
             <div className="space-y-2">

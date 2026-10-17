@@ -3,8 +3,8 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from "@/lib/session";
 import { revalidatePath } from 'next/cache';
-// FIXED: Removed unused 'z' import
-// import { z } from 'zod';
+import { getGmailTransporter } from '@/lib/email';
+import { renderSessionInviteEmailHtml } from '@/components/emails/SessionInviteEmail';
 
 // Define the shape of the User we expect from session
 interface SessionUser {
@@ -17,7 +17,7 @@ interface SessionUser {
 }
 
 // ---------------------------------------------------------
-// 1. Create Meeting (Fixed for FormData)
+// 1. Create Meeting with Year & Department Targeting + Email
 // ---------------------------------------------------------
 export async function createMeeting(formData: FormData) {
   try {
@@ -38,6 +38,8 @@ export async function createMeeting(formData: FormData) {
     const link = formData.get('link') as string;
     const dateString = formData.get('date') as string;
     const targetBatch = formData.get('targetBatch') as string;
+    const targetDepartment = formData.get('targetDepartment') as string;
+    const description = (formData.get('description') as string) || '';
 
     // Validate
     if (!title || !link || !dateString) {
@@ -47,19 +49,78 @@ export async function createMeeting(formData: FormData) {
     // Convert string date to Date object
     const scheduledAt = new Date(dateString);
 
-    await prisma.meeting.create({
+    const normalizedBatch = targetBatch && targetBatch !== "all" ? targetBatch.trim() : null;
+    const normalizedDept = targetDepartment && targetDepartment !== "all" ? targetDepartment.trim() : null;
+
+    const newMeeting = await prisma.meeting.create({
       data: {
         title,
+        description: description || null,
         scheduledAt,
         link,
         mentorId: user.id,
-        // Only save targetBatch if it's not empty/null
-        targetBatch: targetBatch && targetBatch !== "all" ? targetBatch : null,
+        targetBatch: normalizedBatch,
+        targetDepartment: normalizedDept,
       },
     });
 
+    // ---------------------------------------------------------
+    // Automatic Email Notification to Targeted Scholars
+    // ---------------------------------------------------------
+    let notifiedCount = 0;
+    try {
+      // Find all matching scholars
+      const targetScholars = await prisma.user.findMany({
+        where: {
+          roles: { some: { role: 'awardee' } },
+          ...(normalizedBatch ? { batchYear: normalizedBatch } : {}),
+          ...(normalizedDept
+            ? { department: { equals: normalizedDept, mode: 'insensitive' } }
+            : {}),
+        },
+        select: { email: true, firstName: true, lastName: true },
+      });
+
+      const scholarEmails = targetScholars
+        .map((s) => s.email?.trim())
+        .filter((e): e is string => Boolean(e && e.includes('@')));
+
+      if (scholarEmails.length > 0) {
+        const { transporter, senderEmail } = getGmailTransporter();
+        const hostName = user.name || 'LIT Mentor';
+
+        const emailHtml = renderSessionInviteEmailHtml({
+          title,
+          description: description || null,
+          link,
+          scheduledAt,
+          mentorName: hostName,
+          targetBatch: normalizedBatch,
+          targetDepartment: normalizedDept,
+        });
+
+        // Use BCC to deliver in a single request while protecting scholar privacy
+        await transporter.sendMail({
+          from: `"LIT Mentorship Hub" <${senderEmail}>`,
+          to: senderEmail,
+          bcc: scholarEmails,
+          subject: `📅 New Mentorship Session: ${title}`,
+          html: emailHtml,
+        });
+
+        notifiedCount = scholarEmails.length;
+      }
+    } catch (mailError) {
+      console.error('Failed to send session notification emails:', mailError);
+    }
+
     revalidatePath('/mentorship');
-    return { success: true, message: 'Meeting scheduled successfully!' };
+
+    const successMessage = notifiedCount > 0
+      ? `Session scheduled! ${notifiedCount} matching scholar${notifiedCount > 1 ? 's' : ''} notified via email.`
+      : 'Session scheduled successfully!';
+
+    return { success: true, message: successMessage };
   } catch (error) {
     console.error("Create Meeting Error:", error);
     return { error: 'Failed to create meeting.' };
@@ -67,7 +128,7 @@ export async function createMeeting(formData: FormData) {
 }
 
 // ---------------------------------------------------------
-// 2. Get Meetings (Unchanged)
+// 2. Get Meetings (Filtered by Batch & Department for Scholars)
 // ---------------------------------------------------------
 export async function getMeetings() {
   const user = (await getCurrentUser()) as unknown as SessionUser;
@@ -88,6 +149,7 @@ export async function getMeetings() {
     }
   };
 
+  // Mentors, Admins, Staff see all sessions
   if (isPrivileged) {
     return await prisma.meeting.findMany({
       orderBy: { scheduledAt: 'asc' },
@@ -95,12 +157,32 @@ export async function getMeetings() {
     });
   }
 
-  // Student Logic: Filter by Batch
+  // Scholar Logic: Look up fresh Batch & Department from DB
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { batchYear: true, department: true }
+  });
+
+  const userBatch = dbUser?.batchYear ?? user.batchYear;
+  const userDept = dbUser?.department;
+
   return await prisma.meeting.findMany({
     where: {
-      OR: [
-        { targetBatch: null },             
-        { targetBatch: user.batchYear }    
+      AND: [
+        // Batch filter: open to all OR matching student's batch
+        {
+          OR: [
+            { targetBatch: null },
+            ...(userBatch ? [{ targetBatch: userBatch }] : []),
+          ]
+        },
+        // Department filter: open to all departments OR matching student's department
+        {
+          OR: [
+            { targetDepartment: null },
+            ...(userDept ? [{ targetDepartment: { equals: userDept, mode: 'insensitive' as const } }] : []),
+          ]
+        }
       ]
     },
     orderBy: { scheduledAt: 'asc' },
