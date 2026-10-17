@@ -5,11 +5,8 @@ import { requireStaff } from '@/lib/authz';
 import { validateNewPassword } from '@/lib/security';
 import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcrypt';
-import { Resend } from 'resend';
-import React from 'react';
-import WelcomeEmail from '@/components/emails/WelcomeEmail'; 
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { renderWelcomeEmailHtml } from '@/components/emails/WelcomeEmail'; 
+import { getGmailTransporter } from '@/lib/email';
 
 // Helper: who is calling? (checks the DATABASE, throws 'Unauthorized' if not staff)
 async function getMyRole() {
@@ -83,19 +80,38 @@ export async function createUser(formData: FormData) {
 
     // Send Email (the user already exists at this point, so an email failure is a warning, not a failure)
     revalidatePath('/admin/users');
+    let emailSent = true;
+    let emailErrorDetail = '';
     try {
-      await resend.emails.send({
-        from: 'LIT Portal Admin <onboarding@resend.dev>',
-        to: email,
-        subject: `Your LIT Account Created`,
-        react: <WelcomeEmail applicantName={firstName} applicantEmail={email} tempPassword={password} />,
+      const emailHtml = renderWelcomeEmailHtml({
+        applicantName: `${firstName} ${lastName}`.trim(),
+        applicantEmail: email,
+        tempPassword: password,
+        role: roleToAssign,
       });
-    } catch (emailError) {
+
+      const { transporter, senderEmail } = getGmailTransporter();
+
+      await transporter.sendMail({
+        from: `"LIT Scholarship Admin" <${senderEmail}>`,
+        to: email,
+        subject: `Welcome to the LIT Portal - Your Account Details`,
+        html: emailHtml,
+      });
+    } catch (emailError: unknown) {
+      emailSent = false;
+      emailErrorDetail = emailError instanceof Error ? emailError.message : String(emailError);
       console.error('Welcome email failed:', emailError);
-      return { success: true, message: 'User created, but the welcome email could not be sent. Share the password with them directly.' };
     }
 
-    return { success: true, message: 'User created successfully.' };
+    if (!emailSent) {
+      return { 
+        success: true, 
+        message: `User created, but the welcome email could not be sent (${emailErrorDetail}). Share the password with them directly.` 
+      };
+    }
+
+    return { success: true, message: 'User created and welcome email sent successfully.' };
 
   } catch (error: any) {
     console.error("Create User Error:", error);

@@ -6,27 +6,7 @@ import bcrypt from 'bcrypt';
 import { requireStaff } from '@/lib/authz';
 import { generateTempPassword } from '@/lib/security';
 import { renderWelcomeEmailHtml } from '@/components/emails/WelcomeEmail';
-import nodemailer from 'nodemailer';
-
-// Helper to configure and retrieve Gmail Transporter dynamically at request time
-function getGmailTransporter() {
-  const user = process.env.GMAIL_USER?.replace(/^["']|["']$/g, '').trim();
-  const pass = process.env.GMAIL_PASS?.replace(/^["']|["']$/g, '').trim();
-
-  if (!user || !pass) {
-    throw new Error(
-      `Gmail credentials not configured: GMAIL_USER=${user ? 'set' : 'missing'}, GMAIL_PASS=${pass ? 'set' : 'missing'}`
-    );
-  }
-
-  return {
-    transporter: nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass },
-    }),
-    senderEmail: user,
-  };
-}
+import { getGmailTransporter } from '@/lib/email';
 
 // WHO CAN REVIEW APPLICATIONS?
 // Decision: admin AND subadmin (the sidebar already shows "Applications" to both).
